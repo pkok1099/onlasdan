@@ -47,7 +47,9 @@ import com.onlasdan.comic.ui.blueprint.core.ScreenSlot
 import com.onlasdan.comic.ui.chrome.ChromeContext
 import com.onlasdan.comic.ui.chrome.ChromeRouteTag
 import com.onlasdan.comic.ui.chrome.LocalChromeContext
+import com.onlasdan.comic.ui.components.AppConfirmDialog
 import com.onlasdan.comic.ui.components.AppToast
+import com.onlasdan.comic.ui.components.EmptyState
 import com.onlasdan.comic.ui.components.LatestGrid
 import com.onlasdan.comic.ui.screens.profile.ProfileBrick
 import com.onlasdan.comic.ui.screens.profile.ProfileLayoutState
@@ -83,6 +85,7 @@ fun ProfileScreen(
     initialTab: String = "bookmark",
 ) {
     val context = LocalContext.current
+    val onExplore = com.onlasdan.comic.ui.LocalOnExploreHome.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val bottomBarVisible = LocalBottomBarVisible.current
@@ -260,9 +263,10 @@ fun ProfileScreen(
                     }
 
                     ProfileBrick.Content -> when (selectedTab) {
-                        0 -> BookmarkGrid(bookmarks, onComicClick)
+                        0 -> BookmarkGrid(bookmarks, onComicClick, onExplore)
 
                         2 -> DownloadsManagerContent(
+                            onExplore = onExplore,
                             onReadChapter = { comicSlug, src, chapterSlug ->
                                 setSelectedSource(context, src)
                                 onHistoryClick(comicSlug, src, chapterSlug)
@@ -278,6 +282,7 @@ fun ProfileScreen(
                                 }
                             }
                             HistoryList(
+                                onExplore = onExplore,
                                 history = sortedHistory,
                                 listState = listState,
                                 onOpen = { entry ->
@@ -303,27 +308,21 @@ fun ProfileScreen(
         }
     }
 
-    // Konfirmasi bersihkan riwayat (Fase A2): aksi massal wajib dialog
-    // dengan jumlah entri yang akan hilang + toast hasil.
+    // Konfirmasi bersihkan riwayat (Fase A2; AppConfirmDialog sejak B1).
     if (showClearHistoryDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearHistoryDialog = false },
-            title = { Text(stringResource(R.string.profile_clear_history)) },
-            text = { Text(pluralStringResource(R.plurals.profile_clear_history_confirm, history.size, history.size)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        clearHistory(context)
-                        scope.launch { reload() }
-                        showClearHistoryDialog = false
-                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
-                        AppToast.success(historyClearedText)
-                    },
-                ) { Text(stringResource(R.string.detail_confirm)) }
+        AppConfirmDialog(
+            title = stringResource(R.string.profile_clear_history),
+            message = pluralStringResource(R.plurals.profile_clear_history_confirm, history.size, history.size),
+            confirmLabel = stringResource(R.string.detail_confirm),
+            onConfirm = {
+                clearHistory(context)
+                scope.launch { reload() }
+                showClearHistoryDialog = false
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                AppToast.success(historyClearedText)
             },
-            dismissButton = {
-                TextButton(onClick = { showClearHistoryDialog = false }) { Text(stringResource(R.string.detail_cancel)) }
-            },
+            onDismiss = { showClearHistoryDialog = false },
+            destructive = true,
         )
     }
 }
@@ -361,9 +360,9 @@ private fun ProfileHeader() {
 }
 
 @Composable
-private fun BookmarkGrid(bookmarks: List<BookmarkEntry>, onComicClick: (String) -> Unit) {
+private fun BookmarkGrid(bookmarks: List<BookmarkEntry>, onComicClick: (String) -> Unit, onExplore: () -> Unit) {
     if (bookmarks.isEmpty()) {
-        EmptyState(stringResource(R.string.profile_empty_bookmarks))
+        EmptyState(message = stringResource(R.string.profile_empty_bookmarks), actionLabel = stringResource(R.string.common_explore_comics), onAction = onExplore, modifier = Modifier.fillMaxSize())
         return
     }
     val items = bookmarks.map {
@@ -384,9 +383,9 @@ private fun BookmarkGrid(bookmarks: List<BookmarkEntry>, onComicClick: (String) 
 }
 
 @Composable
-private fun HistoryList(history: List<HistoryEntry>, listState: androidx.compose.foundation.lazy.LazyListState, onOpen: (HistoryEntry) -> Unit, onDelete: (HistoryEntry) -> Unit) {
+private fun HistoryList(onExplore: () -> Unit, history: List<HistoryEntry>, listState: androidx.compose.foundation.lazy.LazyListState, onOpen: (HistoryEntry) -> Unit, onDelete: (HistoryEntry) -> Unit) {
     if (history.isEmpty()) {
-        EmptyState(stringResource(R.string.profile_empty_history))
+        EmptyState(message = stringResource(R.string.profile_empty_history), actionLabel = stringResource(R.string.common_explore_comics), onAction = onExplore, modifier = Modifier.fillMaxSize())
         return
     }
     LazyColumn(
@@ -449,11 +448,4 @@ private fun formatReadAt(epoch: Long): String {
     if (epoch <= 0) return "-"
     val formatter = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault())
     return formatter.format(Date(epoch))
-}
-
-@Composable
-private fun EmptyState(message: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
 }

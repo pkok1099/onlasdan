@@ -486,17 +486,26 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
                                         ),
                                     ) { backStackEntry ->
                                         val tab = backStackEntry.arguments?.getString("tab") ?: "bookmark"
-                                        ProfileScreen(
-                                            onComicClick = { slug ->
-                                                sheetComicId = slug
-                                                sheetSourceId = selectedSource
+                                        CompositionLocalProvider(
+                                            LocalOnExploreHome provides {
+                                                navController.navigate("home") {
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
                                             },
-                                            onHistoryClick = { comicSlug, src, chapterSlug ->
-                                                navController.navigate("read/$src/$comicSlug/$chapterSlug")
-                                            },
-                                            onSettingsClick = { navController.navigate("settings") },
-                                            initialTab = tab,
-                                        )
+                                        ) {
+                                            ProfileScreen(
+                                                onComicClick = { slug ->
+                                                    sheetComicId = slug
+                                                    sheetSourceId = selectedSource
+                                                },
+                                                onHistoryClick = { comicSlug, src, chapterSlug ->
+                                                    navController.navigate("read/$src/$comicSlug/$chapterSlug")
+                                                },
+                                                onSettingsClick = { navController.navigate("settings") },
+                                                initialTab = tab,
+                                            )
+                                        }
                                     }
 
                                     composable("settings") {
@@ -829,110 +838,6 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
                             sheetSourceId = sourceId
                         },
                     )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StorageOnboardingPage(
-    onEnable: () -> Unit,
-    onSkip: () -> Unit,
-) {
-    Scaffold(
-        containerColor = PureBlack,
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(Spacing.xl),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Surface(
-                color = DarkSurface,
-                shape = CardShape,
-                border = androidx.compose.foundation.BorderStroke(StrokeWidth.regular, DarkOutline),
-            ) {
-                Column(modifier = Modifier.padding(Spacing.xl), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    Text(
-                        text = stringResource(R.string.storage_onboarding_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = TextPrimary,
-                    )
-                    Text(
-                        text = stringResource(R.string.storage_onboarding_body),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), modifier = Modifier.fillMaxWidth()) {
-                        SecondaryButton(
-                            text = stringResource(R.string.storage_onboarding_no),
-                            onClick = onSkip,
-                            modifier = Modifier.weight(1f),
-                        )
-                        PrimaryButton(
-                            text = stringResource(R.string.storage_onboarding_yes),
-                            onClick = onEnable,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StorageRestorePage(
-    summary: BackupSummary?,
-    onRestore: () -> Unit,
-    onSkip: () -> Unit,
-) {
-    Scaffold(
-        containerColor = PureBlack,
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(Spacing.xl),
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Surface(
-                color = DarkSurface,
-                shape = CardShape,
-                border = androidx.compose.foundation.BorderStroke(StrokeWidth.regular, DarkOutline),
-            ) {
-                Column(modifier = Modifier.padding(Spacing.xl), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    Text(
-                        text = stringResource(R.string.storage_restore_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = TextPrimary,
-                    )
-                    val bodyText = if (summary != null && (summary.historyCount > 0L || summary.bookmarksCount > 0L)) {
-                        pluralStringResource(R.plurals.storage_restore_with_counts, summary.historyCount.toInt(), summary.historyCount, summary.bookmarksCount)
-                    } else {
-                        stringResource(R.string.storage_restore_body)
-                    }
-                    Text(
-                        text = bodyText,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), modifier = Modifier.fillMaxWidth()) {
-                        SecondaryButton(
-                            text = stringResource(R.string.storage_restore_skip),
-                            onClick = onSkip,
-                            modifier = Modifier.weight(1f),
-                        )
-                        PrimaryButton(
-                            text = stringResource(R.string.storage_restore_confirm),
-                            onClick = onRestore,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
                 }
             }
         }

@@ -403,7 +403,7 @@ fun ProfileBackupSheetContent(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = "BACKUP & RESTORE DATABASE",
+                        text = stringResource(R.string.profile_backup_section_title).uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryPink,

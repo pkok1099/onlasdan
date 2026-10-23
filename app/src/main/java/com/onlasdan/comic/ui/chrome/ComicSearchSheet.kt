@@ -475,9 +475,7 @@ fun ComicSearchSheetContent(
                 }
             } else if (showSearchEmpty) {
                 item {
-                    EmptyState(
-                        message = stringResource(R.string.search_empty_result, debouncedQuery),
-                    )
+                    EmptyState(message = stringResource(R.string.search_empty_result, debouncedQuery), actionLabel = stringResource(R.string.search_reset), onAction = { query = "" })
                 }
             }
         }

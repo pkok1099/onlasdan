@@ -77,6 +77,7 @@ fun ComicDetailSheet(
 ) {
     val context = LocalContext.current
     val shareComicText = stringResource(R.string.detail_share_comic)
+    val shareTextFormat = stringResource(R.string.detail_share_text)
     val chapterDeletedFormat = stringResource(R.string.downloads_chapter_deleted)
     val chapterDeletedFreedFormat = stringResource(R.string.downloads_chapter_deleted_freed)
     val bookmarkRemovedFormat = stringResource(R.string.detail_bookmark_removed)
@@ -171,7 +172,7 @@ fun ComicDetailSheet(
 
     fun shareComic() {
         val detail = comicDetail ?: return
-        val shareText = "Baca komik \"${detail.title}\" di Onlasdan (${source.name})"
+        val shareText = shareTextFormat.format(detail.title, source.name)
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
             putExtra(Intent.EXTRA_TEXT, shareText)
             putExtra(Intent.EXTRA_TITLE, detail.title)
@@ -264,7 +265,7 @@ fun ComicDetailSheet(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Tutup",
+                            contentDescription = stringResource(R.string.common_close),
                             tint = TextSecondary,
                             modifier = Modifier.size(18.dp),
                         )
@@ -662,8 +663,10 @@ private fun DetailInfoSection(
 ) {
     val context = LocalContext.current
 
-    val readButtonLabel = remember(history, chapters) {
-        if (history != null) "Lanjut Baca" else "Mulai Baca"
+    val readResumeText = stringResource(R.string.card_action_read_resume)
+    val readStartText = stringResource(R.string.card_action_read_start)
+    val readButtonLabel = remember(history, chapters, readResumeText, readStartText) {
+        if (history != null) readResumeText else readStartText
     }
     val targetChapterSlug = remember(history, chapters) {
         if (history != null) {
@@ -909,7 +912,7 @@ private fun DetailInfoSection(
             ) {
                 Icon(
                     imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                    contentDescription = if (isBookmarked) "Hapus Bookmark" else "Simpan Bookmark",
+                    contentDescription = stringResource(if (isBookmarked) R.string.detail_bookmark_remove else R.string.detail_bookmark_add),
                     tint = if (isBookmarked) PrimaryPink else TextSecondary,
                     modifier = Modifier.size(22.dp),
                 )
@@ -958,7 +961,7 @@ private fun DetailInfoSection(
                 )
                 if (comic.synopsis.length > 120) {
                     Text(
-                        text = if (synopsisExpanded) "Lebih sedikit" else "Lihat selengkapnya",
+                        text = stringResource(if (synopsisExpanded) R.string.detail_synopsis_less else R.string.detail_synopsis_more),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = PrimaryPink,
                         modifier = Modifier

@@ -29,6 +29,7 @@ import com.onlasdan.comic.BuildConfig
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.blueprint.BlueprintProvider
 import com.onlasdan.comic.ui.blueprint.core.ScreenSlot
+import com.onlasdan.comic.ui.components.AppConfirmDialog
 import com.onlasdan.comic.ui.components.AppToast
 import com.onlasdan.comic.ui.components.SimpleTopBar
 import com.onlasdan.comic.ui.screens.settings.SettingsBrick
@@ -108,8 +109,8 @@ fun SettingsScreen(
             storageUri = uri
             scope.launch {
                 DatabaseBackupStore.exportDb(context)
-                    .onSuccess { AppToast.success("Backup database disimpan.") }
-                    .onFailure { AppToast.error("Gagal backup database: ${it.message}") }
+                    .onSuccess { AppToast.success(msgBackupSuccess) }
+                    .onFailure { AppToast.error("$msgBackupFailPrefix ${it.message ?: ""}") }
             }
         }
     }
@@ -377,9 +378,9 @@ fun SettingsScreen(
         overlayPlacements.forEach { placement ->
             if (!placement.predicate(state)) return@forEach
             when (placement.brick) {
-                SettingsBrick.BackupDialog -> ConfirmDialog(
+                SettingsBrick.BackupDialog -> AppConfirmDialog(
                     title = stringResource(R.string.settings_dialog_backup_title),
-                    body = stringResource(R.string.settings_dialog_backup_body),
+                    message = stringResource(R.string.settings_dialog_backup_body),
                     confirmLabel = stringResource(R.string.settings_dialog_backup_confirm),
                     onConfirm = {
                         showBackupInfo = false
@@ -392,9 +393,9 @@ fun SettingsScreen(
                     onDismiss = { showBackupInfo = false },
                 )
 
-                SettingsBrick.RestoreDialog -> ConfirmDialog(
+                SettingsBrick.RestoreDialog -> AppConfirmDialog(
                     title = stringResource(R.string.settings_dialog_restore_title),
-                    body = stringResource(R.string.settings_dialog_restore_body),
+                    message = stringResource(R.string.settings_dialog_restore_body),
                     confirmLabel = stringResource(R.string.settings_dialog_restore_confirm),
                     onConfirm = {
                         showRestoreInfo = false
@@ -407,15 +408,15 @@ fun SettingsScreen(
                     onDismiss = { showRestoreInfo = false },
                 )
 
-                SettingsBrick.ImportDialog -> ConfirmDialog(
+                SettingsBrick.ImportDialog -> AppConfirmDialog(
                     title = stringResource(R.string.settings_dialog_import_title),
-                    body = stringResource(R.string.settings_dialog_import_body),
+                    message = stringResource(R.string.settings_dialog_import_body),
                     confirmLabel = stringResource(R.string.settings_dialog_import_confirm),
                     onConfirm = {
                         val uri = importDbUri
                         showImportInfo = false
                         importDbUri = null
-                        if (uri == null) return@ConfirmDialog
+                        if (uri == null) return@AppConfirmDialog
                         runCatching {
                             val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                             context.contentResolver.takePersistableUriPermission(uri, flags)
@@ -432,9 +433,9 @@ fun SettingsScreen(
                     },
                 )
 
-                SettingsBrick.ClearCacheDialog -> ConfirmDialog(
+                SettingsBrick.ClearCacheDialog -> AppConfirmDialog(
                     title = stringResource(R.string.settings_dialog_cache_title),
-                    body = stringResource(R.string.settings_dialog_cache_body, cacheFormatted),
+                    message = stringResource(R.string.settings_dialog_cache_body, cacheFormatted),
                     confirmLabel = stringResource(R.string.settings_dialog_cache_confirm),
                     onConfirm = {
                         showClearCacheInfo = false
@@ -475,21 +476,4 @@ private fun SettingSection(title: String, content: @Composable ColumnScope.() ->
         Spacer(Modifier.height(8.dp))
         content()
     }
-}
-
-@Composable
-private fun ConfirmDialog(
-    title: String,
-    body: String,
-    confirmLabel: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title, fontWeight = FontWeight.Bold) },
-        text = { Text(body, style = MaterialTheme.typography.bodyMedium) },
-        confirmButton = { Button(onClick = onConfirm) { Text(confirmLabel) } },
-        dismissButton = { OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
-    )
 }

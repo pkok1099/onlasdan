@@ -22,13 +22,11 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,6 +50,7 @@ import coil.compose.AsyncImage
 import com.onlasdan.comic.R
 import com.onlasdan.comic.data.db.ComicDatabase
 import com.onlasdan.comic.data.db.DownloadedChapterEntity
+import com.onlasdan.comic.ui.components.AppConfirmDialog
 import com.onlasdan.comic.ui.components.AppToast
 import com.onlasdan.comic.ui.components.EmptyState
 import com.onlasdan.comic.ui.components.NoirBottomSheet
@@ -87,6 +86,7 @@ private fun rememberVisibleDownloads(downloads: List<DownloadedChapterEntity>): 
 fun DownloadsManagerContent(
     onReadChapter: (comicSlug: String, source: String, chapterSlug: String) -> Unit,
     modifier: Modifier = Modifier,
+    onExplore: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val db = remember { ComicDatabase.get(context) }
@@ -97,7 +97,7 @@ fun DownloadsManagerContent(
     val groups = remember(visibleDownloads) { visibleDownloads.groupBy { it.source to it.comicSlug } }
 
     Box(modifier = modifier.fillMaxSize()) {
-        DownloadsList(visibleDownloads, groups, onOpenComic = { selectedComic = it })
+        DownloadsList(visibleDownloads, groups, onOpenComic = { selectedComic = it }, onExplore = onExplore)
         SelectedComicSheet(
             groups = groups,
             selectedComic = selectedComic,
@@ -130,12 +130,13 @@ private fun DownloadsList(
     downloads: List<DownloadedChapterEntity>,
     groups: Map<Pair<String, String>, List<DownloadedChapterEntity>>,
     onOpenComic: (Pair<String, String>) -> Unit,
+    onExplore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     LaunchedEffect(Unit) { UiPreferences.setDownloadsSeenAt(context, System.currentTimeMillis()) }
     if (downloads.isEmpty()) {
-        EmptyState(message = stringResource(R.string.downloads_empty), icon = Icons.Outlined.FileDownload, modifier = modifier.fillMaxSize())
+        EmptyState(message = stringResource(R.string.downloads_empty), icon = Icons.Outlined.FileDownload, actionLabel = stringResource(R.string.common_explore_comics), onAction = onExplore, modifier = modifier.fillMaxSize())
         return
     }
     val totalSize = remember(downloads) { downloads.sumOf { it.sizeBytes } }
@@ -363,21 +364,16 @@ private fun DeleteAllDownloadsDialog(
     val freedFormat = stringResource(R.string.downloads_deleted_freed)
     val deletedText = stringResource(R.string.downloads_deleted)
     val totalBytes = chapters.sumOf { it.sizeBytes }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.downloads_delete_all)) },
-        text = { Text(pluralStringResource(R.plurals.downloads_delete_all_confirm, chapters.size, chapters.first().comicTitle, chapters.size, Formatter.formatFileSize(context, totalBytes))) },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onConfirm()
-                    if (totalBytes > 0L) AppToast.success(freedFormat.format(Formatter.formatFileSize(context, totalBytes))) else AppToast.show(deletedText)
-                },
-            ) { Text(stringResource(R.string.detail_confirm)) }
+    AppConfirmDialog(
+        title = stringResource(R.string.downloads_delete_all),
+        message = pluralStringResource(R.plurals.downloads_delete_all_confirm, chapters.size, chapters.first().comicTitle, chapters.size, Formatter.formatFileSize(context, totalBytes)),
+        confirmLabel = stringResource(R.string.detail_confirm),
+        onConfirm = {
+            onConfirm()
+            if (totalBytes > 0L) AppToast.success(freedFormat.format(Formatter.formatFileSize(context, totalBytes))) else AppToast.show(deletedText)
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.detail_cancel)) }
-        },
+        onDismiss = onDismiss,
+        destructive = true,
     )
 }
 

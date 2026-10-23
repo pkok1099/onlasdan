@@ -161,6 +161,8 @@ fun GenreSheet(
 
                 GenreSheetUiState.Empty -> EmptyState(
                     message = stringResource(R.string.browse_empty_result),
+                    actionLabel = stringResource(R.string.common_try_again),
+                    onAction = { reload() },
                 )
             }
         }

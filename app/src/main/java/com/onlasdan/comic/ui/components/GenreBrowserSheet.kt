@@ -267,7 +267,7 @@ fun GenreBrowserSheetContent(
                         .weight(1f),
                     contentAlignment = Alignment.Center,
                 ) {
-                    EmptyState(message = stringResource(R.string.common_no_data_found))
+                    EmptyState(message = stringResource(R.string.common_no_data_found), actionLabel = stringResource(R.string.common_try_again), onAction = { loadGenres() })
                 }
             }
 
@@ -278,7 +278,7 @@ fun GenreBrowserSheetContent(
                         .weight(1f),
                     contentAlignment = Alignment.Center,
                 ) {
-                    EmptyState(message = stringResource(R.string.genre_empty_search))
+                    EmptyState(message = stringResource(R.string.genre_empty_search), actionLabel = stringResource(R.string.search_reset), onAction = { searchQuery = "" })
                 }
             }
 
