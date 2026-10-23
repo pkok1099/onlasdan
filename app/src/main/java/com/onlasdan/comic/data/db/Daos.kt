@@ -36,12 +36,18 @@ interface BookmarkDao {
         """,
     )
     suspend fun searchByTitle(queryLike: String, limit: Int): List<BookmarkEntity>
+
+    @Query("SELECT COUNT(*) FROM bookmarks")
+    suspend fun countAll(): Int
 }
 
 @Dao
 interface HistoryDao {
     @Query("SELECT * FROM history ORDER BY readAt DESC")
     suspend fun getAll(): List<HistoryEntity>
+
+    @Query("SELECT COUNT(*) FROM history")
+    suspend fun countAll(): Int
 
     @Query("SELECT * FROM history WHERE comicSlug = :comicSlug AND source = :source LIMIT 1")
     fun observeHistory(comicSlug: String, source: String): Flow<HistoryEntity?>

@@ -93,7 +93,6 @@ fun ComicDetailSheet(
     val source = remember(sourceId) { SourceRegistry.get(sourceId) }
     val db = remember { ComicDatabase.get(context) }
 
-    // Reactive Room DB flows
     val readChapterList by db.readDao().observeReadChapters(comicId, source.id).collectAsStateWithLifecycle(initialValue = emptyList())
     val readChapters = remember(readChapterList) { readChapterList.toSet() }
     val historyEntity by db.historyDao().observeHistory(comicId, source.id).collectAsStateWithLifecycle(initialValue = null)
@@ -251,7 +250,6 @@ fun ComicDetailSheet(
                     .navigationBarsPadding()
                     .imePadding(),
             ) {
-                // Top bar — selalu terlihat
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -840,6 +838,12 @@ private fun DetailInfoSection(
             }
         }
 
+        // Progres baca (Fase D — Goal Gradient): kartu momentum di bawah
+        // chip terakhir dibaca, dari data lokal yang sudah ada di layar ini.
+        if (history != null) {
+            DetailReadProgressCard(chapters = chapters, historyChapterSlug = history.chapterSlug)
+        }
+
         // Indicator: Offline storage used
         if (totalStorageBytes > 0) {
             Surface(
@@ -975,6 +979,47 @@ private fun DetailInfoSection(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Kartu progres baca (Fase D — Goal Gradient): posisi bab terakhir yang
+ * dibaca terhadap total bab dari daftar lokal detail. Bar tidak pernah
+ * tampak 0% (minimum visual 6% begitu ada bab terbaca); teks momentum
+ * berubah menjadi hitungan sisa saat bab hampir habis. Tidak dirender
+ * bila bab terakhir tidak ditemukan di daftar (data basi) — chip
+ * "terakhir dibaca" tetap menjadi fallback yang bersih. Daftar bab
+ * terurut terbaru-dulu: indeks bab riwayat di daftar = jumlah bab yang
+ * lebih baru darinya = sisa bab sesudah posisi baca terakhir.
+ */
+@Composable
+private fun DetailReadProgressCard(chapters: List<Chapter>, historyChapterSlug: String) {
+    val total = chapters.size
+    val remaining = chapters.indexOfFirst { chapterSlugOf(it.id) == historyChapterSlug }
+    if (total == 0 || remaining < 0) return
+    val current = total - remaining
+    val momentumText = when {
+        remaining == 0 -> stringResource(R.string.detail_progress_finished)
+        remaining <= 5 -> pluralStringResource(R.plurals.detail_progress_remaining, remaining, remaining)
+        else -> pluralStringResource(R.plurals.detail_progress_chapters, total, current, total, current * 100 / total)
+    }
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = DarkSurfaceElevated,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        ) {
+            Text(text = momentumText, style = MaterialTheme.typography.labelMedium, color = TextPrimary)
+            LinearProgressIndicator(
+                progress = { (current.toFloat() / total).coerceIn(0.06f, 1f) },
+                color = PrimaryPink,
+                trackColor = DarkOutline,
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+            )
         }
     }
 }

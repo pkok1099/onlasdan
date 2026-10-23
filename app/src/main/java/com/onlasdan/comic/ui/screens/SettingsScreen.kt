@@ -32,6 +32,8 @@ import com.onlasdan.comic.ui.blueprint.core.ScreenSlot
 import com.onlasdan.comic.ui.components.AppConfirmDialog
 import com.onlasdan.comic.ui.components.AppToast
 import com.onlasdan.comic.ui.components.SimpleTopBar
+import com.onlasdan.comic.ui.components.backupProtectMessage
+import com.onlasdan.comic.ui.components.rememberLibraryCounts
 import com.onlasdan.comic.ui.screens.settings.SettingsBrick
 import com.onlasdan.comic.ui.screens.settings.SettingsLayoutState
 import com.onlasdan.comic.ui.source.SourceRegistry
@@ -69,6 +71,7 @@ fun SettingsScreen(
     val msgBackupFailPrefix = stringResource(R.string.settings_dialog_backup_failed_prefix)
     val msgRestoreSuccess = stringResource(R.string.settings_dialog_restore_success)
     val msgRestoreFailedSafe = stringResource(R.string.backup_restore_failed_safe)
+    val libraryCounts = rememberLibraryCounts()
     val msgImportSuccess = stringResource(R.string.settings_dialog_import_success)
     val msgCacheFailPrefix = stringResource(R.string.settings_dialog_cache_failed_prefix)
     val scope = rememberCoroutineScope()
@@ -382,7 +385,7 @@ fun SettingsScreen(
             when (placement.brick) {
                 SettingsBrick.BackupDialog -> AppConfirmDialog(
                     title = stringResource(R.string.settings_dialog_backup_title),
-                    message = stringResource(R.string.settings_dialog_backup_body),
+                    message = libraryCounts?.let { backupProtectMessage(it.first, it.second) } ?: stringResource(R.string.backup_protect_default),
                     confirmLabel = stringResource(R.string.settings_dialog_backup_confirm),
                     onConfirm = {
                         showBackupInfo = false

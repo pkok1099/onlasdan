@@ -103,7 +103,6 @@
     <string name="settings_cache_clear_with_size">Hapus Cache (%1$s)</string>
 
     <string name="settings_dialog_backup_title">Cadangkan Data</string>
-    <string name="settings_dialog_backup_body">Cadangan akan menyalin database SQLite (comic.db) berisi markah, riwayat, dan status terbaca ke penyimpanan yang dipilih.</string>
     <string name="settings_dialog_backup_confirm">Cadangkan</string>
     <string name="settings_dialog_backup_success">Database berhasil dicadangkan.</string>
     <string name="settings_dialog_backup_failed_prefix">Gagal mencadangkan database</string>
@@ -156,6 +155,28 @@
     <string name="common_refresh_failed">Gagal memuat data terbaru</string>
     <string name="common_open_downloads">Buka Komik Unduhan</string>
     <string name="backup_restore_failed_safe">Gagal memulihkan cadangan. Data kamu sebelumnya tetap aman dan tidak berubah.</string>
+    <string name="backup_protect_default">Lindungi markah dan riwayat bacamu agar tidak hilang saat ganti perangkat atau aplikasi terhapus.</string>
+    <plurals name="backup_protect_both">
+        <item quantity="one">Lindungi %1$d komik di Markah dan %2$d riwayat bacamu agar tidak hilang saat ganti perangkat atau aplikasi terhapus.</item>
+        <item quantity="other">Lindungi %1$d komik di Markah dan %2$d riwayat bacamu agar tidak hilang saat ganti perangkat atau aplikasi terhapus.</item>
+    </plurals>
+    <plurals name="backup_protect_bookmarks">
+        <item quantity="one">Lindungi %1$d komik di Markahmu agar tidak hilang saat ganti perangkat atau aplikasi terhapus.</item>
+        <item quantity="other">Lindungi %1$d komik di Markahmu agar tidak hilang saat ganti perangkat atau aplikasi terhapus.</item>
+    </plurals>
+    <plurals name="backup_protect_history">
+        <item quantity="one">Lindungi %1$d riwayat bacamu agar tidak hilang saat ganti perangkat atau aplikasi terhapus.</item>
+        <item quantity="other">Lindungi %1$d riwayat bacamu agar tidak hilang saat ganti perangkat atau aplikasi terhapus.</item>
+    </plurals>
+    <plurals name="detail_progress_chapters">
+        <item quantity="one">Bab %1$d dari %2$d (%3$d%%)</item>
+        <item quantity="other">Bab %1$d dari %2$d (%3$d%%)</item>
+    </plurals>
+    <plurals name="detail_progress_remaining">
+        <item quantity="one">Tinggal %d bab lagi!</item>
+        <item quantity="other">Tinggal %d bab lagi!</item>
+    </plurals>
+    <string name="detail_progress_finished">Semua bab sudah dibaca — tamat!</string>
     <string name="error_show_detail">Lihat detail teknis</string>
     <string name="error_hide_detail">Sembunyikan detail</string>
     <string name="error_copy_detail">Salin detail</string>
@@ -281,7 +302,7 @@
     <string name="reader_setting_fullscreen_desc">Sembunyikan status bar dan navigasi saat membaca untuk area baca maksimal.</string>
 
     <string name="storage_onboarding_title">Penyimpanan</string>
-    <string name="storage_onboarding_body">Ingin simpan backup database (comic.db) di Documents supaya tetap ada walau aplikasi di-uninstall?</string>
+    <string name="storage_onboarding_body">Aktifkan cadangan agar markah dan riwayat bacamu tetap aman walau aplikasi terhapus atau kamu ganti perangkat.</string>
     <string name="storage_onboarding_yes">Ya, simpan</string>
     <string name="storage_onboarding_no">Tidak</string>
     <string name="storage_restore_title">Backup ditemukan</string>

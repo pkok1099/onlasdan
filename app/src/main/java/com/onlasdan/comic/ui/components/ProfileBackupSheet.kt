@@ -434,8 +434,7 @@ fun ProfileBackupSheetContent(
                     stringResource(R.string.storage_backup_never)
                 }
                 Text(text = lastBackupText, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-
-                Spacer(Modifier.height(Spacing.md))
+                BackupProtectText()
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     // Export Backup Button
