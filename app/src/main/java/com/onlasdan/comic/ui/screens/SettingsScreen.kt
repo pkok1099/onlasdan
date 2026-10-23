@@ -68,9 +68,8 @@ fun SettingsScreen(
     val msgBackupSuccess = stringResource(R.string.settings_dialog_backup_success)
     val msgBackupFailPrefix = stringResource(R.string.settings_dialog_backup_failed_prefix)
     val msgRestoreSuccess = stringResource(R.string.settings_dialog_restore_success)
-    val msgRestoreFailPrefix = stringResource(R.string.settings_dialog_restore_failed_prefix)
+    val msgRestoreFailedSafe = stringResource(R.string.backup_restore_failed_safe)
     val msgImportSuccess = stringResource(R.string.settings_dialog_import_success)
-    val msgImportFailPrefix = stringResource(R.string.settings_dialog_import_failed_prefix)
     val msgCacheFailPrefix = stringResource(R.string.settings_dialog_cache_failed_prefix)
     val scope = rememberCoroutineScope()
     var storageUri by remember { mutableStateOf(DatabaseBackupStore.getCustomTreeUri(context)) }
@@ -110,7 +109,10 @@ fun SettingsScreen(
             scope.launch {
                 DatabaseBackupStore.exportDb(context)
                     .onSuccess { AppToast.success(msgBackupSuccess) }
-                    .onFailure { AppToast.error("$msgBackupFailPrefix ${it.message ?: ""}") }
+                    .onFailure { e ->
+                        android.util.Log.e("SettingsScreen", "backup gagal", e)
+                        AppToast.error(msgBackupFailPrefix)
+                    }
             }
         }
     }
@@ -387,7 +389,10 @@ fun SettingsScreen(
                         scope.launch {
                             DatabaseBackupStore.exportDb(context)
                                 .onSuccess { AppToast.success(msgBackupSuccess) }
-                                .onFailure { AppToast.error("$msgBackupFailPrefix ${it.message ?: ""}") }
+                                .onFailure { e ->
+                                    android.util.Log.e("SettingsScreen", "backup gagal", e)
+                                    AppToast.error(msgBackupFailPrefix)
+                                }
                         }
                     },
                     onDismiss = { showBackupInfo = false },
@@ -402,7 +407,10 @@ fun SettingsScreen(
                         scope.launch {
                             DatabaseBackupStore.restoreDb(context)
                                 .onSuccess { AppToast.success(msgRestoreSuccess) }
-                                .onFailure { AppToast.error("$msgRestoreFailPrefix ${it.message ?: ""}") }
+                                .onFailure { e ->
+                                    android.util.Log.e("SettingsScreen", "restore gagal", e)
+                                    AppToast.error(msgRestoreFailedSafe)
+                                }
                         }
                     },
                     onDismiss = { showRestoreInfo = false },
@@ -424,7 +432,10 @@ fun SettingsScreen(
                         scope.launch {
                             DatabaseBackupStore.restoreFromUri(context, uri)
                                 .onSuccess { AppToast.success(msgImportSuccess) }
-                                .onFailure { AppToast.error("$msgImportFailPrefix ${it.message ?: ""}") }
+                                .onFailure { e ->
+                                    android.util.Log.e("SettingsScreen", "impor gagal", e)
+                                    AppToast.error(msgRestoreFailedSafe)
+                                }
                         }
                     },
                     onDismiss = {
@@ -450,7 +461,8 @@ fun SettingsScreen(
                                 }
                                 .onFailure { error ->
                                     isClearingCache = false
-                                    AppToast.error("$msgCacheFailPrefix ${error.message ?: ""}")
+                                    android.util.Log.e("SettingsScreen", "hapus cache gagal", error)
+                                    AppToast.error(msgCacheFailPrefix)
                                     refreshCacheSize()
                                 }
                         }

@@ -134,7 +134,7 @@ fun ProfileBackupSheetContent(
     val backupSuccessText = stringResource(R.string.storage_backup_success)
     val backupFailedText = stringResource(R.string.storage_backup_failed)
     val restoreSuccessText = stringResource(R.string.storage_restore_success)
-    val restoreFailedText = stringResource(R.string.storage_restore_failed)
+    val restoreFailedText = stringResource(R.string.backup_restore_failed_safe)
     val scrollState = rememberScrollState()
     val view = LocalView.current
     // Scope yang selamat dari penutupan sheet: operasi DB krusial (backup/
@@ -152,7 +152,12 @@ fun ProfileBackupSheetContent(
             val result = op()
             withContext(Dispatchers.Main) {
                 busyAction = ""
-                if (result.isSuccess) onSuccess() else AppToast.error(failText)
+                if (result.isSuccess) {
+                    onSuccess()
+                } else {
+                    android.util.Log.e("ProfileBackupSheet", "operasi $action gagal", result.exceptionOrNull())
+                    AppToast.error(failText)
+                }
             }
         }
     }

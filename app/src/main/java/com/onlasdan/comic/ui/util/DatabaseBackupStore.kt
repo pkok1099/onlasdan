@@ -238,11 +238,38 @@ object DatabaseBackupStore {
 
             val sqlite = ComicDatabase.get(context).openHelper.writableDatabase
             checkBackupFile(tempFile, sqlite.version)
-            replaceAllTables(sqlite, tempFile)
-            downgradeMissingDownloads(sqlite)
+            // Snapshot pengaman (Fase C): salin basis data hidup ke file
+            // sementara SEBELUM ditimpa. Kegagalan sesudah titik ini
+            // memulihkan snapshot agar data lama utuh, lalu error asli
+            // diteruskan ke pemanggil.
+            val safetyFile = File(context.cacheDir, "restore_safety.db")
+            try {
+                writeSafetySnapshot(context, safetyFile)
+                val applyResult = runCatching {
+                    replaceAllTables(sqlite, tempFile)
+                    downgradeMissingDownloads(sqlite)
+                }
+                if (applyResult.isFailure) {
+                    val failure = applyResult.exceptionOrNull() ?: error("restore gagal")
+                    val rolledBack = runCatching { replaceAllTables(sqlite, safetyFile) }.isSuccess
+                    android.util.Log.e("DatabaseBackupStore", "restore gagal; snapshot dipulihkan=$rolledBack", failure)
+                    throw failure
+                }
+            } finally {
+                safetyFile.delete()
+            }
         } finally {
             tempFile.delete()
         }
+    }
+
+    // Salin basis data yang hidup (setelah checkpoint WAL, pola yang sama
+    // dengan exportDb) sebagai jaring pengaman proses restore.
+    private fun writeSafetySnapshot(context: Context, safetyFile: File) {
+        checkpointWalSafely(context)
+        val dbFile = context.getDatabasePath(DB_FILE_NAME)
+        require(dbFile.exists()) { "Database belum ada" }
+        dbFile.inputStream().use { input -> safetyFile.outputStream().use { output -> input.copyTo(output) } }
     }
 
     // Backup hanya membawa basis data, bukan file gambar unduhan (bug B6):

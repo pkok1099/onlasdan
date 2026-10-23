@@ -107,7 +107,7 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
     val selectedSource by mainViewModel.selectedSource.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val restoreSuccessText = stringResource(R.string.storage_restore_success)
-    val restoreFailedText = stringResource(R.string.storage_restore_failed)
+    val restoreFailedText = stringResource(R.string.backup_restore_failed_safe)
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("comic_prefs", android.content.Context.MODE_PRIVATE) }
     var onboardingDone by remember { mutableStateOf(prefs.getBoolean("storage_onboarding_done", false)) }
