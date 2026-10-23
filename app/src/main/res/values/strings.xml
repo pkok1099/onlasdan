@@ -1,0 +1,360 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Comic Reader</string>
+
+    <string name="browse_error_failed">Failed to load browse data.</string>
+
+    <string name="common_failed_load">Gagal memuat data</string>
+    <string name="common_try_again">Coba Lagi</string>
+    <string name="common_view_all">View All</string>
+    <string name="common_change_grid">Change grid</string>
+    <string name="common_hd_mode">HD Mode</string>
+
+
+    <!-- Floating Chrome Pill -->
+    <string name="chrome_profile_name">.M.U.F.A.R.</string>
+    <string name="chrome_profile_session_local">Sesi Aktif (Lokal)</string>
+    <string name="chrome_section_context">Context</string>
+    <string name="chrome_section_nav">Navigasi</string>
+    <string name="chrome_menu_bookmarks">Markah</string>
+    <string name="chrome_menu_history">Riwayat</string>
+    <string name="chrome_menu_downloads">Unduhan</string>
+    <string name="chrome_menu_profile_backup">Profil &amp; Backup</string>
+    <string name="chrome_context_toggle_hd">HD Mode</string>
+    <string name="chrome_context_search_genres">Cari Genre</string>
+    <string name="chrome_context_columns">Kolom</string>
+    <string name="search_hint_all">Cari di semua sumber&#8230;</string>
+    <string name="search_source_all">Semua</string>
+    <string name="search_section_saved">Tersimpan</string>
+    <string name="search_section_results">Hasil Pencarian (%1$d)</string>
+    <string name="search_refresh_failed">Gagal memuat hasil terbaru</string>
+    <string name="search_empty_result">Tidak ada komik yang cocok dengan &#8220;%1$s&#8221;</string>
+    <string name="home_genre_explorer">Jelajahi Genre</string>
+    <string name="detail_chapter_search_hint">Cari chapter&#8230;</string>
+    <string name="detail_empty_chapters">Belum ada chapter</string>
+    <string name="detail_empty_chapters_search">Tidak ada chapter yang cocok</string>
+    <string name="settings_animation_title">Animasi UI</string>
+    <string name="settings_animation_desc">Animasi tetap hidup meski skala animasi sistem dimatikan (0x).</string>
+    <string name="settings_animation_full">Aktif — penuh dan elegan</string>
+    <string name="settings_animation_minimal">Minim — cepat tanpa pantulan</string>
+
+    <string name="screen_browse">Browse</string>
+    <string name="screen_genres">Genres</string>
+    <string name="screen_genre">Genre</string>
+    <string name="screen_updates">Latest Updates</string>
+    <string name="screen_profile">Profile</string>
+    <string name="screen_settings">Pengaturan</string>
+
+    <string name="genres_section_genres">Genres</string>
+    <string name="genres_section_demographics">Demographics</string>
+    <string name="genres_section_themes">Themes</string>
+    <string name="genres_section_content">Content</string>
+    <string name="genres_failed_load_genre">Failed to load genre.</string>
+    <string name="genres_no_comics_found">No comics found.</string>
+
+    <string name="updates_failed">Failed to load updates.</string>
+    <string name="common_no_data_found">No data found.</string>
+
+    <string name="blueprint_missing_title">Layout tidak tersedia</string>
+    <string name="blueprint_missing_body">Layout config tidak tersedia untuk source ini.</string>
+    <string name="blueprint_missing_source">No blueprint for source: %1$s</string>
+    <string name="blueprint_missing_choose_source">Choose source</string>
+
+    <string name="home_empty_message">Belum ada konten dari sumber ini</string>
+    <string name="cd_grid_view">Tampilan Grid</string>
+    <string name="cd_list_view">Tampilan List</string>
+    <string name="detail_authors">Authors</string>
+    <string name="detail_characters">Characters</string>
+    <string name="detail_download_pdf">Download PDF</string>
+    <string name="detail_groups">Groups</string>
+    <string name="detail_chapter_count">Daftar Chapter (%1$d)</string>
+    <string name="detail_read_first_chapter">Ch. 1</string>
+    <string name="detail_sort_chapters">Urutkan</string>
+    <string name="detail_clear_search">Hapus</string>
+    <string name="detail_rating_score">Rating Skor</string>
+    <string name="detail_series">Series</string>
+    <string name="detail_series_info">Series Information</string>
+    <string name="detail_views">Views</string>
+    <string name="genre_browser_search_hint">Cari genre…</string>
+    <string name="genre_browser_title">Jelajahi Genre</string>
+    <string name="genre_empty_search">Tidak ada genre yang cocok</string>
+    <string name="genre_title_count" tools:ignore="PluralsCandidate">%1$d judul</string>
+    <string name="home_hero_read_now">Baca Sekarang</string>
+
+    <string name="settings_storage_title">Penyimpanan</string>
+    <string name="settings_source_default_title">Source Default</string>
+    <string name="settings_source_default_desc">Source yang dibuka pertama kali saat aplikasi dijalankan.</string>
+    <string name="settings_storage_path_default">Documents/ComicReader/comic.db</string>
+    <string name="settings_storage_desc">Data disimpan sebagai SQLite (.db). File backup diletakkan di Documents/ComicReader agar tidak ikut terhapus saat uninstall.</string>
+    <string name="settings_storage_pick_folder">Pilih Folder</string>
+    <string name="settings_storage_default">Default</string>
+    <string name="settings_storage_to_default">Kembali ke MediaStore Documents.</string>
+
+    <string name="settings_backup_title">Backup &amp; Restore</string>
+    <string name="settings_backup_desc">Backup berisi: bookmark, history, dan status chapter yang sudah dibaca (SQLite).</string>
+    <string name="settings_backup_now">Backup Sekarang</string>
+    <string name="settings_restore">Pulihkan</string>
+    <string name="settings_import_db">Import .db</string>
+
+    <string name="settings_cache_title">Cache</string>
+    <string name="settings_cache_desc">Cache berisi data sementara seperti halaman komik dan gambar yang sudah dibuka.</string>
+    <string name="settings_cache_size_label">Ukuran cache: %1$s</string>
+    <string name="settings_cache_calculating">Menghitung…</string>
+    <string name="settings_cache_clear">Hapus Cache</string>
+    <string name="settings_cache_clear_with_size">Hapus Cache (%1$s)</string>
+
+    <string name="settings_dialog_backup_title">Backup Data</string>
+    <string name="settings_dialog_backup_body">Backup akan menyalin database SQLite (comic.db) berisi bookmark, history, dan status terbaca ke penyimpanan yang dipilih.</string>
+    <string name="settings_dialog_backup_confirm">Backup</string>
+    <string name="settings_dialog_backup_success">Backup database disimpan.</string>
+    <string name="settings_dialog_backup_failed_prefix">Gagal backup database:</string>
+
+    <string name="settings_dialog_restore_title">Pulihkan Data</string>
+    <string name="settings_dialog_restore_body">Data lokal saat ini akan diganti oleh isi file comic.db dari penyimpanan yang dipilih.</string>
+    <string name="settings_dialog_restore_confirm">Pulihkan</string>
+    <string name="settings_dialog_restore_success">Database dipulihkan.</string>
+    <string name="settings_dialog_restore_failed_prefix">Gagal restore:</string>
+
+    <string name="settings_dialog_import_title">Import Database</string>
+    <string name="settings_dialog_import_body">Import akan menimpa data lokal dengan file comic.db yang kamu pilih. Ini diperlukan setelah install ulang, karena Android membatasi akses otomatis ke file Documents lama.</string>
+    <string name="settings_dialog_import_confirm">Import</string>
+    <string name="settings_dialog_import_success">Database di-import.</string>
+    <string name="settings_dialog_import_failed_prefix">Gagal import:</string>
+
+    <string name="settings_dialog_cache_title">Hapus Cache</string>
+    <string name="settings_dialog_cache_body">Apakah Anda yakin ingin menghapus data cache sebesar %1$s? Tindakan ini tidak akan menghapus bookmark atau riwayat baca.</string>
+    <string name="settings_dialog_cache_confirm">Hapus</string>
+    <string name="settings_dialog_cache_success">Cache sebesar %1$s berhasil dibersihkan.</string>
+    <string name="settings_dialog_cache_failed_prefix">Gagal hapus cache:</string>
+
+    <string name="common_cancel">Batal</string>
+    <string name="common_guest">Guest</string>
+
+    <string name="profile_tab_bookmark">Bookmark</string>
+    <string name="profile_tab_history">History</string>
+    <string name="profile_tab_downloads">Unduhan</string>
+    <string name="downloads_empty">Belum ada chapter yang diunduh</string>
+    <plurals name="downloads_summary">
+        <item quantity="other">%1$d chapter dari %2$d komik · total %3$s</item>
+    </plurals>
+    <plurals name="downloads_group_meta">
+        <item quantity="other">%1$s · %2$d chapter · %3$s</item>
+    </plurals>
+    <string name="downloads_status_queued">Dalam antrean</string>
+    <plurals name="downloads_status_downloading">
+        <item quantity="other">Mengunduh %1$d/%2$d halaman</item>
+    </plurals>
+    <plurals name="downloads_status_completed">
+        <item quantity="other">Selesai · %1$d halaman · %2$s</item>
+    </plurals>
+    <string name="downloads_status_failed">Gagal diunduh</string>
+    <string name="downloads_retry">Coba lagi unduh</string>
+    <string name="downloads_open_chapters">Buka daftar chapter terunduh</string>
+    <string name="downloads_delete_chapter">Hapus unduhan chapter</string>
+    <string name="downloads_deleted_freed">%1$s berhasil dihapus</string>
+    <string name="downloads_deleted">Unduhan dihapus</string>
+    <string name="downloads_parallel_title">Unduhan serentak</string>
+    <string name="downloads_parallel_desc">Beberapa chapter diunduh bersamaan; nonaktif = satu per satu berurutan</string>
+    <string name="downloads_delete_all">Hapus semua unduhan komik ini</string>
+    <string name="downloads_delete_all_confirm">Hapus semua chapter terunduh dari %1$s?</string>
+    <string name="profile_sort_newest">Sort: Newest</string>
+    <string name="profile_sort_oldest">Sort: Oldest</string>
+    <string name="profile_sort_title">Sort: Title</string>
+    <string name="profile_clear_history">Clear history</string>
+    <string name="profile_storage_label">Penyimpanan: %1$s</string>
+    <string name="profile_empty_bookmarks">Belum ada bookmark.</string>
+    <string name="profile_empty_history">Belum ada history.</string>
+    <string name="profile_last_read_prefix">Terakhir dibaca: %1$s</string>
+
+
+    <string name="projects_title">Projects</string>
+    <string name="projects_empty">No projects available at the moment.</string>
+
+
+    <string name="cd_chapters">Chapters</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_history_menu">History menu</string>
+    <string name="cd_delete_history">Delete history</string>
+
+    <string name="reader_title">Reader</string>
+
+    <string name="browse_filters_title">Filters</string>
+    <string name="browse_btn_filters">Filters</string>
+    <string name="browse_btn_reset">Reset</string>
+    <string name="browse_btn_apply_filter">Apply Filter</string>
+    <string name="browse_btn_load_more">Muat lagi</string>
+    <string name="browse_empty_result">Tidak ada komik yang cocok dengan filter ini</string>
+    <string name="common_back">Kembali</string>
+    <string name="dock_search">Cari</string>
+    <string name="dock_home">Beranda</string>
+    <string name="dock_browse">Jelajah</string>
+    <string name="dock_genres">Genre</string>
+    <string name="dock_profile">Profil</string>
+    <string name="home_action_see_all">Lihat Semua</string>
+    <string name="browse_search_placeholder_id">Cari judul&#8230;</string>
+    <string name="browse_all">All</string>
+    <string name="browse_default">Default</string>
+    <string name="browse_type">Type</string>
+    <string name="browse_status">Status</string>
+    <string name="browse_format">Format</string>
+    <string name="browse_order">Order</string>
+    <string name="browse_order_by">Order By</string>
+    <string name="browse_tipe">Tipe</string>
+    <string name="browse_genre">Genre</string>
+    <string name="browse_sorttime">Sorttime</string>
+    <string name="browse_genres">Genres</string>
+    <string name="browse_demografis">Demografis</string>
+    <string name="browse_konten">Konten</string>
+    <string name="browse_tema">Tema</string>
+    <string name="browse_placeholder_modified">modified</string>
+    <string name="browse_sort_latest">Terbaru</string>
+    <string name="browse_sort_latest_chapter">Chapter Terbaru</string>
+    <string name="browse_sort_popular" tools:ignore="Typos">Populer</string>
+    <string name="browse_sort_rating">Rating</string>
+    <string name="browse_sort_views">Dilihat</string>
+    <string name="browse_status_ongoing">Ongoing</string>
+    <string name="browse_status_completed">Tamat</string>
+    <string name="browse_status_hiatus">Hiatus</string>
+    <string name="browse_type_doujinshi">Doujinshi</string>
+    <string name="browse_type_manga">Manga</string>
+    <string name="browse_type_manhwa">Manhwa</string>
+    <string name="browse_format_manga">Manga</string>
+    <string name="browse_format_manhwa">Manhwa</string>
+    <string name="browse_format_manhua">Manhua</string>
+
+    <string name="genres_explore_title">Explore by Genre</string>
+    <string name="genres_explore_subtitle">Discover thousands of comics across different genres.</string>
+    <string name="genres_browse_all">Browse All Genres</string>
+
+
+    <string name="reader_auto_scroll_speed">Auto Scroll Speed</string>
+    <string name="reader_speed_value">Value: %1$d</string>
+    <string name="reader_speed_placeholder">Speed</string>
+    <string name="reader_speed_minus_50">-50</string>
+    <string name="reader_speed_minus_10">-10</string>
+    <string name="reader_speed_plus_10">+10</string>
+    <string name="reader_speed_plus_50">+50</string>
+    <string name="reader_warning_speed_high">Warning: speed terlalu tinggi bisa bikin scroll patah-patah atau crash.</string>
+    <string name="reader_auto_next">Auto Next</string>
+    <string name="reader_autonext_delay_label">Jeda Auto-Next</string>
+    <string name="reader_autonext_delay_value">%1$.1f detik</string>
+    <string name="reader_autonext_countdown">Menuju chapter berikutnya dalam %1$d dtk&#8230;</string>
+    <string name="reader_autonext_skip">Buka Sekarang</string>
+    <string name="reader_autonext_cancel">Batal</string>
+
+    <string name="reader_cd_prev_chapter">Prev chapter</string>
+    <string name="reader_cd_next_chapter">Next chapter</string>
+    <string name="reader_cd_auto_scroll">Auto Scroll</string>
+    <string name="reader_cd_auto_next">Auto Next</string>
+    <string name="reader_tooltip_prev_chapter">Chapter Sebelumnya</string>
+    <string name="reader_tooltip_settings">Pengaturan Baca</string>
+    <string name="reader_tooltip_chapters">Daftar Chapter</string>
+    <string name="reader_tooltip_auto_scroll">Auto Scroll (Mulai / Jeda)</string>
+    <string name="reader_tooltip_auto_next">Auto Next Chapter</string>
+    <string name="reader_tooltip_next_chapter">Chapter Berikutnya</string>
+    <string name="reader_page_loading">Memuat halaman…</string>
+    <string name="reader_page_retrying">Mencoba ulang (%1$d/%2$d)…</string>
+    <string name="reader_page_error">Gagal memuat gambar</string>
+    <string name="reader_page_retry">Muat Ulang</string>
+    <string name="reader_setting_fullscreen">Layar Penuh (Immersive)</string>
+    <string name="reader_setting_fullscreen_desc">Sembunyikan status bar dan navigasi saat membaca untuk area baca maksimal.</string>
+
+    <string name="storage_onboarding_title">Penyimpanan</string>
+    <string name="storage_onboarding_body">Ingin simpan backup database (comic.db) di Documents supaya tetap ada walau aplikasi di-uninstall?</string>
+    <string name="storage_onboarding_yes">Ya, simpan</string>
+    <string name="storage_onboarding_no">Tidak</string>
+    <string name="storage_restore_title">Backup ditemukan</string>
+    <string name="storage_restore_body">File comic.db ditemukan di folder yang dipilih. Pulihkan sekarang?</string>
+    <plurals name="storage_restore_with_counts">
+        <item quantity="one">Ditemukan %1$d riwayat bacaan dan %2$d bookmark tersimpan di folder cadangan. Pulihkan sekarang?</item>
+        <item quantity="other">Ditemukan %1$d riwayat bacaan dan %2$d bookmark tersimpan di folder cadangan. Pulihkan sekarang?</item>
+    </plurals>
+    <string name="storage_restore_confirm">Pulihkan</string>
+    <string name="storage_restore_skip">Lewati</string>
+    <string name="storage_backup_last_time">Terakhir dicadangkan: %1$s</string>
+    <string name="storage_backup_never">Belum pernah dicadangkan</string>
+    <string name="storage_btn_backup_now">Cadangkan Sekarang</string>
+    <string name="storage_btn_change_folder">Ubah Folder</string>
+    <string name="storage_backup_success">Data berhasil dicadangkan!</string>
+    <string name="storage_restore_success">Data berhasil dipulihkan!</string>
+    <string name="storage_backup_failed">Gagal mencadangkan data</string>
+    <string name="storage_restore_failed">Gagal memulihkan data</string>
+
+    <!-- Comic Detail QoL & Offline Downloads -->
+    <string name="detail_chapter_read">Sudah dibaca</string>
+    <string name="detail_last_read_label">Terakhir dibaca: %1$s</string>
+    <string name="detail_last_read_page">Terakhir dibaca: %1$s • Hal. %2$d/%3$d (%4$d%%)</string>
+    <string name="detail_filter_all">Semua (%1$d)</string>
+    <string name="detail_filter_unread">Belum Dibaca (%1$d)</string>
+    <string name="detail_filter_downloaded">Terunduh (%1$d)</string>
+    <string name="detail_select_mode">Pilih</string>
+    <string name="detail_cancel_select">Batal</string>
+    <plurals name="detail_selected_count">
+        <item quantity="one">%1$d Terpilih</item>
+        <item quantity="other">%1$d Terpilih</item>
+    </plurals>
+    <string name="detail_select_all">Pilih Semua</string>
+    <string name="detail_select_unread">Belum Dibaca</string>
+    <string name="detail_download_selected">Unduh (%1$d)</string>
+    <string name="detail_mark_read_selected">Tandai Dibaca</string>
+    <string name="detail_mark_previous_read">Tandai chapter sebelumnya sudah dibaca</string>
+    <string name="detail_download_chapter">Unduh chapter</string>
+    <string name="detail_delete_download">Hapus Unduhan</string>
+    <string name="detail_download_queued">Mengantre unduhan…</string>
+    <string name="download_channel_name">Unduhan chapter</string>
+    <string name="download_notification_title">Mengunduh chapter</string>
+    <string name="download_notification_page">Halaman %1$d/%2$d</string>
+    <string name="detail_download_success">Chapter berhasil diunduh</string>
+    <string name="detail_download_failed">Unduhan gagal, ketuk untuk coba lagi</string>
+    <string name="detail_cancel_download">Batalkan unduhan</string>
+    <string name="detail_download_cancelled">Unduhan dibatalkan</string>
+    <string name="download_results_channel_name">Hasil unduhan</string>
+    <string name="download_completed_text">Selesai diunduh: %1$s</string>
+    <string name="download_failed_text">Gagal diunduh: %1$s</string>
+    <string name="download_cancelled_text">Unduhan dibatalkan: %1$s</string>
+    <string name="detail_storage_used">%1$s terunduh untuk komik ini</string>
+    <string name="detail_delete_all_downloads">Hapus Semua Unduhan</string>
+    <string name="detail_delete_all_downloads_confirm">Hapus semua file unduhan untuk komik ini?</string>
+    <string name="detail_deleted_all_downloads">Semua unduhan komik berhasil dihapus</string>
+    <string name="detail_confirm">Hapus</string>
+    <string name="detail_cancel">Batal</string>
+    <string name="detail_share_comic">Bagikan Komik</string>
+
+    <!-- Reader QoL & Delight -->
+    <string name="reader_keep_screen_on_title">Tetap Nyalakan Layar</string>
+    <string name="reader_keep_screen_on_desc">Cegah layar mati otomatis saat membaca</string>
+    <string name="reader_end_title">Bab Selesai</string>
+    <string name="reader_end_next_label">Bab Berikutnya: %1$s</string>
+    <string name="reader_end_latest_title">Kamu telah membaca bab terbaru! ✨</string>
+    <string name="reader_end_latest_desc">Tandai bookmark agar mendapat notifikasi saat ada bab baru.</string>
+    <string name="reader_end_btn_next">Lanjut ke Bab Berikutnya</string>
+    <string name="reader_end_btn_prev">Bab Sebelumnya</string>
+    <string name="reader_end_btn_detail">Kembali ke Detail</string>
+
+    <!-- Seamless Continuous Reading & Night Dimmer -->
+    <string name="reader_seamless_title">Baca Berkelanjutan</string>
+    <string name="reader_seamless_desc">Sambung bab berikutnya langsung ke bawah tanpa memutus auto-scroll</string>
+    <string name="reader_auto_next_desc">Otomatis lanjut ke chapter berikutnya saat mencapai akhir halaman.</string>
+    <string name="reader_autonext_delay_desc">Beri jeda setelah mentok di bawah sebelum berpindah ke chapter selanjutnya.</string>
+    <string name="reader_autonext_locked_badge">Terkunci</string>
+    <string name="reader_autonext_seamless_locked_desc">Terkunci aktif oleh mode Baca Berkelanjutan (Seamless)</string>
+    <string name="reader_tooltip_auto_next_locked">Auto Next: Terkunci Aktif (Mode Berkelanjutan)</string>
+    <string name="reader_night_dimmer_title">Peredup Layar (Night Dimmer)</string>
+    <string name="reader_night_dimmer_desc">Meredupkan gambar untuk membaca di ruangan gelap gulita (%1$d%%)</string>
+    <string name="reader_chapter_divider_title">Selesai: %1$s</string>
+    <string name="reader_chapter_divider_next">Memulai: %1$s</string>
+    <string name="reader_scroll_to_top">Ke Awal Bab</string>
+    <string name="reader_scroll_to_bottom">Ke Akhir Bab</string>
+    <string name="reader_chapter_active">Aktif</string>
+    <string name="reader_connecting_next_chapter">Menyambung chapter selanjutnya&#8230;</string>
+
+    <!-- Card Hold Contextual Actions -->
+    <string name="card_action_read_resume">Lanjut Baca</string>
+    <string name="card_action_read_start">Mulai Baca</string>
+    <string name="card_action_start_sub">Dari Chapter 1</string>
+    <string name="card_action_bookmarked_title">Tersimpan</string>
+    <string name="card_action_bookmarked_sub">Di dalam koleksi</string>
+    <string name="card_action_bookmark_add">Bookmarks</string>
+    <string name="card_action_bookmark_sub">Simpan ke koleksi</string>
+    <string name="card_action_last_read_prefix">Terakhir dibaca: %1$s</string>
+    <string name="card_action_not_read_yet">Belum pernah dibaca</string>
+</resources>

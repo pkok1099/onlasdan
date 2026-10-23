@@ -1,0 +1,18 @@
+# Pengecualian batas keras ukuran file (500 baris) — format: path|cap|alasan
+# Cap = jumlah baris maksimum yang diizinkan untuk file itu. File warisan
+# dibekukan di ukurannya per 2026-10-22: TIDAK BOLEH TUMBUH; menyusut saat
+# disentuh, dan entri dihapus begitu file turun ke <= 500 baris.
+# File BARU di atas 500 baris wajib masuk daftar ini dengan alasan kuat.
+app/src/main/java/com/onlasdan/comic/ui/components/ComicDetailSheet.kt|1030|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/screens/browse/BrowseScreen.kt|1177|Warisan sebelum kebijakan 2026-10-22; +23 baris mekanis 2026-10-22 dari migrasi 3 sheet filter M3 ke NoirBottomSheet (perintah user) — pembungkus LazyColumn per sheet.
+app/src/main/java/com/onlasdan/comic/ui/components/ShinigamiHomeComponents.kt|966|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/MainActivity.kt|941|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/chrome/UnifiedMorphingDock.kt|640|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/scraper/KomikindoScraper.kt|611|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/components/Skeletons.kt|589|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/scraper/KomikuScraper.kt|586|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/util/Motion.kt|580|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/components/ProfileBackupSheet.kt|572|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/components/ComicCard.kt|572|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/screens/HomeScreen.kt|559|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
+app/src/main/java/com/onlasdan/comic/ui/components/DoujinSectionComponents.kt|539|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
