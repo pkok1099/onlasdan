@@ -46,18 +46,20 @@ fun UpdatesScreen(
         return
     }
     val failedUpdates = stringResource(R.string.updates_failed)
+    val refreshFailedText = stringResource(R.string.common_refresh_failed)
     var page by remember(source) { mutableIntStateOf(1) }
     val updatesCacheKey = remember(source, page) { "updates:$source:$page" }
     var data by remember(updatesCacheKey) { mutableStateOf(UiMemoryCache.peek<Paged<Comic>>(updatesCacheKey)) }
     var error by remember(source) { mutableStateOf<String?>(null) }
     var isLoading by remember(source) { mutableStateOf(true) }
     var isRefreshing by remember(source) { mutableStateOf(false) }
+    var retryKey by remember(source) { mutableIntStateOf(0) }
     val listState = rememberLazyListState()
     val bottomBarVisible = LocalBottomBarVisible.current
     val headerVisible = rememberSaveable { mutableStateOf(true) }
     bindAutoHideOnScroll(listState = listState, headerVisible = headerVisible, bottomBarVisible = bottomBarVisible)
 
-    LaunchedEffect(source, page) {
+    LaunchedEffect(source, page, retryKey) {
         val hasData = data != null
         isLoading = !hasData
         isRefreshing = hasData
@@ -73,7 +75,9 @@ fun UpdatesScreen(
             data = result
             UiMemoryCache.put(updatesCacheKey, result as Any, 5 * 60 * 1000L)
         } catch (_: Exception) {
-            error = failedUpdates
+            // Refresh gagal saat data lama masih ada: pertahankan data di
+            // layar, beri tahu lewat toast saja (Fase B2).
+            if (data == null) error = failedUpdates else AppToast.error(refreshFailedText)
         } finally {
             isLoading = false
             isRefreshing = false
@@ -148,13 +152,16 @@ fun UpdatesScreen(
                     com.onlasdan.comic.ui.components.PlaceholderGrid()
                 }
 
-                enabled.contains(UpdatesBrick.Error) -> Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    Text(error ?: failedUpdates)
-                }
+                enabled.contains(UpdatesBrick.Error) -> ErrorState(
+                    message = error ?: failedUpdates,
+                    onRetry = { retryKey++ },
+                    modifier = Modifier.fillMaxSize(),
+                )
 
-                enabled.contains(UpdatesBrick.Empty) -> Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    Text(stringResource(R.string.common_no_data_found))
-                }
+                enabled.contains(UpdatesBrick.Empty) -> EmptyState(
+                    message = stringResource(R.string.common_no_data_found),
+                    modifier = Modifier.fillMaxSize(),
+                )
 
                 else -> {
                     var updatesShown by remember { mutableStateOf(false) }

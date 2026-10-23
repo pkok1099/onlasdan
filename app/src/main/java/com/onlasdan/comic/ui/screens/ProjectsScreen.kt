@@ -40,6 +40,7 @@ fun ProjectsScreen(
     columns: Int,
 ) {
     val source = rememberSelectedSource()
+    val refreshFailedText = stringResource(R.string.common_refresh_failed)
     val blueprint = remember(source) { BlueprintProvider.forSource(source)?.projects?.blueprint }
     if (blueprint == null) {
         BlueprintMissingScreen(source = source, onBack = onBack, onChooseSource = onBack)
@@ -57,13 +58,15 @@ fun ProjectsScreen(
                 failed = false
             }
         } catch (_: Exception) {
-            if (data == null) failed = true
+            // Refresh gagal saat data lama masih tampil: layar tidak
+            // ditimpa error penuh — cukup toast (Fase B2).
+            if (data == null) failed = true else AppToast.error(refreshFailedText)
         }
     }
 
     when {
         data != null -> ProjectsContent(data.orEmpty(), onComicClick, onBack, isHd, columns, blueprint)
-        failed -> ProjectsErrorState(onRetry = { reloadKey++ })
+        failed -> ErrorState(message = stringResource(R.string.common_failed_load), onRetry = { reloadKey++ }, modifier = Modifier.fillMaxSize())
         else -> PlaceholderGrid()
     }
 }
@@ -74,19 +77,6 @@ private suspend fun loadProjectsCached(source: String, cacheKey: String, force: 
     val items = SourceRegistry.get(source).sectionFeed("projects", "", 1).items
     UiMemoryCache.put(cacheKey, items as Any, 10 * 60 * 1000L)
     return items
-}
-
-@Composable
-private fun ProjectsErrorState(onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(stringResource(R.string.common_failed_load), style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onRetry) { Text(stringResource(R.string.common_try_again)) }
-    }
 }
 
 @Composable
@@ -128,9 +118,7 @@ private fun ProjectsContent(
                 if (!placement.predicate(layoutState)) return@forEach
                 when (placement.brick) {
                     ProjectsBrick.Empty -> item {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.projects_empty))
-                        }
+                        EmptyState(message = stringResource(R.string.projects_empty), modifier = Modifier.fillMaxSize())
                     }
 
                     ProjectsBrick.Grid -> {

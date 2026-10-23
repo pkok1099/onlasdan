@@ -70,6 +70,9 @@ import com.onlasdan.comic.ui.blueprint.core.ScreenSlot
 import com.onlasdan.comic.ui.chrome.ChromeContext
 import com.onlasdan.comic.ui.chrome.ChromeRouteTag
 import com.onlasdan.comic.ui.chrome.LocalChromeContext
+import com.onlasdan.comic.ui.components.AppToast
+import com.onlasdan.comic.ui.components.EmptyState
+import com.onlasdan.comic.ui.components.ErrorState
 import com.onlasdan.comic.ui.components.HomeComicCard
 import com.onlasdan.comic.ui.components.LayoutAndHdRow
 import com.onlasdan.comic.ui.components.NoirBottomSheet
@@ -126,6 +129,7 @@ fun BrowseScreen(
 
     val listState = rememberLazyListState()
     val browseErrorFailed = androidx.compose.ui.res.stringResource(R.string.browse_error_failed)
+    val refreshFailedText = androidx.compose.ui.res.stringResource(R.string.common_refresh_failed)
     val bottomBarVisible = LocalBottomBarVisible.current
     val headerVisible = rememberSaveable { mutableStateOf(true) }
     bindAutoHideOnScroll(listState = listState, headerVisible = headerVisible, bottomBarVisible = bottomBarVisible)
@@ -156,6 +160,19 @@ fun BrowseScreen(
     var error by remember(source) { mutableStateOf<String?>(null) }
     var isLoading by remember(source) { mutableStateOf(true) }
     var isRefreshing by remember(source) { mutableStateOf(false) }
+    var retryKey by remember(source) { mutableIntStateOf(0) }
+
+    // Atur ulang penuh — satu-satunya definisi: dipakai konteks chrome
+    // (resetBrowseFilter) dan CTA EmptyState hasil kosong (Fase B2).
+    val resetFilters: () -> Unit = {
+        komikuFilters = KomikuFilters()
+        komikindoFilters = KomikindoFilters()
+        shinigamiFilters = ShinigamiFilters()
+        doujindesuFilters = DoujindesuFilters()
+        searchTerm = TextFieldValue("")
+        activeQuery = null
+        page = 1
+    }
 
     DisposableEffect(isHd, columns, source) {
         val currentContext = ChromeContext(
@@ -163,15 +180,7 @@ fun BrowseScreen(
             isHd = isHd,
             columns = columns,
             openBrowseFilter = { showFilters = true },
-            resetBrowseFilter = {
-                komikuFilters = KomikuFilters()
-                komikindoFilters = KomikindoFilters()
-                shinigamiFilters = ShinigamiFilters()
-                doujindesuFilters = DoujindesuFilters()
-                searchTerm = TextFieldValue("")
-                activeQuery = null
-                page = 1
-            },
+            resetBrowseFilter = resetFilters,
         )
         chromeContextState.value = currentContext
         onDispose {
@@ -181,7 +190,7 @@ fun BrowseScreen(
         }
     }
 
-    LaunchedEffect(source, page, adapterStateKey) {
+    LaunchedEffect(source, page, adapterStateKey, retryKey) {
         val hasData = data != null
         isLoading = !hasData
         isRefreshing = hasData
@@ -198,7 +207,9 @@ fun BrowseScreen(
             data = result
             UiMemoryCache.put(browseCacheKey, result as Any, 5 * 60 * 1000L)
         } catch (_: Exception) {
-            error = browseErrorFailed
+            // Refresh gagal saat data lama masih ada: pertahankan data,
+            // beri tahu lewat toast saja (Fase B2).
+            if (data == null) error = browseErrorFailed else AppToast.error(refreshFailedText)
         } finally {
             isLoading = false
             isRefreshing = false
@@ -310,69 +321,83 @@ fun BrowseScreen(
                                     com.onlasdan.comic.ui.components.PlaceholderGrid()
                                 }
 
-                                state.error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text(state.error)
-                                }
+                                state.error != null -> ErrorState(
+                                    message = state.error ?: browseErrorFailed,
+                                    onRetry = { retryKey++ },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
 
-                                state.data == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    Text(stringResource(R.string.common_no_data_found))
-                                }
+                                state.data == null -> EmptyState(
+                                    message = stringResource(R.string.browse_empty_result),
+                                    actionLabel = stringResource(R.string.browse_btn_reset),
+                                    onAction = resetFilters,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
 
                                 else -> {
                                     val data = requireNotNull(state.data)
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        var browseShown by remember { mutableStateOf(false) }
-                                        SideEffect { browseShown = true }
-                                        val browseAlpha by animateNoirFloatAsState(
-                                            targetValue = if (browseShown) 1f else 0f,
-                                            animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
-                                            label = "browseFade",
+                                    if (data.items.isEmpty()) {
+                                        EmptyState(
+                                            message = stringResource(R.string.browse_empty_result),
+                                            actionLabel = stringResource(R.string.browse_btn_reset),
+                                            onAction = resetFilters,
+                                            modifier = Modifier.fillMaxSize(),
                                         )
-                                        Box(Modifier.graphicsLayer { alpha = browseAlpha }) {
-                                            val safeColumns = columns.coerceAtLeast(2)
-                                            val items = data.items
-                                            val rows = remember(items, safeColumns) { items.chunked(safeColumns) }
+                                    } else {
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            var browseShown by remember { mutableStateOf(false) }
+                                            SideEffect { browseShown = true }
+                                            val browseAlpha by animateNoirFloatAsState(
+                                                targetValue = if (browseShown) 1f else 0f,
+                                                animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+                                                label = "browseFade",
+                                            )
+                                            Box(Modifier.graphicsLayer { alpha = browseAlpha }) {
+                                                val safeColumns = columns.coerceAtLeast(2)
+                                                val items = data.items
+                                                val rows = remember(items, safeColumns) { items.chunked(safeColumns) }
 
-                                            LazyColumn(
-                                                modifier = Modifier.fillMaxSize(),
-                                                state = listState,
-                                                contentPadding = PaddingValues(bottom = 100.dp),
-                                            ) {
-                                                itemsIndexed(
-                                                    items = rows,
-                                                    key = { idx, row -> "${idx}_${row.firstOrNull()?.id ?: row.firstOrNull()?.title.orEmpty()}" },
-                                                    contentType = { _, _ -> "browse_comic_row" },
-                                                ) { _, row ->
-                                                    Row(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .animateItem()
-                                                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                    ) {
-                                                        row.forEach { comic ->
-                                                            Box(Modifier.weight(1f)) {
-                                                                HomeComicCard(
-                                                                    comic.title,
-                                                                    getImageUrl(comic.cover, isHd),
-                                                                    comic.type,
-                                                                    comic.latestChapter,
-                                                                    sharedKey = "cover-${comic.id}",
-                                                                ) { onComicClick(comic.id) }
+                                                LazyColumn(
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    state = listState,
+                                                    contentPadding = PaddingValues(bottom = 100.dp),
+                                                ) {
+                                                    itemsIndexed(
+                                                        items = rows,
+                                                        key = { idx, row -> "${idx}_${row.firstOrNull()?.id ?: row.firstOrNull()?.title.orEmpty()}" },
+                                                        contentType = { _, _ -> "browse_comic_row" },
+                                                    ) { _, row ->
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .animateItem()
+                                                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                                        ) {
+                                                            row.forEach { comic ->
+                                                                Box(Modifier.weight(1f)) {
+                                                                    HomeComicCard(
+                                                                        comic.title,
+                                                                        getImageUrl(comic.cover, isHd),
+                                                                        comic.type,
+                                                                        comic.latestChapter,
+                                                                        sharedKey = "cover-${comic.id}",
+                                                                    ) { onComicClick(comic.id) }
+                                                                }
                                                             }
+                                                            if (row.size < safeColumns) repeat(safeColumns - row.size) { Spacer(Modifier.weight(1f)) }
                                                         }
-                                                        if (row.size < safeColumns) repeat(safeColumns - row.size) { Spacer(Modifier.weight(1f)) }
                                                     }
-                                                }
-                                                if (showPagination) {
-                                                    item {
-                                                        NumberPagination(
-                                                            currentPage = page,
-                                                            totalPages = data.totalPages,
-                                                            onPageSelected = { page = it },
-                                                            modifier = Modifier.padding(top = 8.dp),
-                                                        )
-                                                        Spacer(Modifier.height(72.dp))
+                                                    if (showPagination) {
+                                                        item {
+                                                            NumberPagination(
+                                                                currentPage = page,
+                                                                totalPages = data.totalPages,
+                                                                onPageSelected = { page = it },
+                                                                modifier = Modifier.padding(top = 8.dp),
+                                                            )
+                                                            Spacer(Modifier.height(72.dp))
+                                                        }
                                                     }
                                                 }
                                             }

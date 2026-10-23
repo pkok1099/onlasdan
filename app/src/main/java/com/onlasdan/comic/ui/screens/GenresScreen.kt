@@ -28,7 +28,10 @@ import com.onlasdan.comic.ui.blueprint.core.ScreenSlot
 import com.onlasdan.comic.ui.chrome.ChromeContext
 import com.onlasdan.comic.ui.chrome.ChromeRouteTag
 import com.onlasdan.comic.ui.chrome.LocalChromeContext
+import com.onlasdan.comic.ui.components.AppToast
 import com.onlasdan.comic.ui.components.ComicGrid
+import com.onlasdan.comic.ui.components.EmptyState
+import com.onlasdan.comic.ui.components.ErrorState
 import com.onlasdan.comic.ui.components.NoirBottomSheet
 import com.onlasdan.comic.ui.components.NumberPagination
 import com.onlasdan.comic.ui.components.SimpleTopBar
@@ -204,9 +207,11 @@ fun GenresListScreen(onGenreClick: (String) -> Unit, onBack: (() -> Unit)? = nul
                 com.onlasdan.comic.ui.components.PlaceholderGrid(modifier = Modifier.weight(1f))
             }
 
-            enabled.contains(GenresListBrick.Error) -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(error ?: "Error")
-            }
+            enabled.contains(GenresListBrick.Error) -> ErrorState(
+                message = stringResource(R.string.common_failed_load),
+                onRetry = {},
+                modifier = Modifier.fillMaxSize(),
+            )
 
             else -> LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -265,6 +270,7 @@ fun GenreDetailScreen(
     val source = rememberSelectedSource()
     var error by remember { mutableStateOf<String?>(null) }
     var page by remember { mutableIntStateOf(1) }
+    var retryKey by remember { mutableIntStateOf(0) }
     val cacheKey = remember(source, genreSlug, page) { "genres:detail:$source:$genreSlug:$page" }
     var data by remember(cacheKey) { mutableStateOf(UiMemoryCache.peek<Paged<Comic>>(cacheKey)) }
     var genreName by remember(source, genreSlug) { mutableStateOf<String?>(null) }
@@ -278,15 +284,17 @@ fun GenreDetailScreen(
         return
     }
     val failedLoadGenre = stringResource(R.string.genres_failed_load_genre)
+    val refreshFailedText = stringResource(R.string.common_refresh_failed)
 
-    LaunchedEffect(cacheKey) {
+    LaunchedEffect(cacheKey, retryKey) {
         if (data != null && UiMemoryCache.isFresh(cacheKey)) return@LaunchedEffect
         try {
             val result = SourceRegistry.get(source).search("", mapOf("genre" to genreSlug), page)
             data = result
             UiMemoryCache.put(cacheKey, result as Any, 24 * 60 * 60 * 1000L)
         } catch (_: Exception) {
-            error = failedLoadGenre
+            // Sama seperti Updates: data lama dipertahankan + toast.
+            if (data == null) error = failedLoadGenre else AppToast.error(refreshFailedText)
         }
     }
 
@@ -354,13 +362,16 @@ fun GenreDetailScreen(
                 com.onlasdan.comic.ui.components.PlaceholderGrid(modifier = Modifier.weight(1f))
             }
 
-            enabled.contains(GenreDetailBrick.Error) -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(error ?: failedLoadGenre)
-            }
+            enabled.contains(GenreDetailBrick.Error) -> ErrorState(
+                message = error ?: failedLoadGenre,
+                onRetry = { retryKey++ },
+                modifier = Modifier.fillMaxSize(),
+            )
 
-            enabled.contains(GenreDetailBrick.Empty) -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.genres_no_comics_found))
-            }
+            enabled.contains(GenreDetailBrick.Empty) -> EmptyState(
+                message = stringResource(R.string.genres_no_comics_found),
+                modifier = Modifier.fillMaxSize(),
+            )
 
             else -> Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
                 LazyColumn(

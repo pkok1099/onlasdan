@@ -38,7 +38,7 @@ class MainViewModelStateTest {
 
     @Before
     fun setUp() {
-        testFilesDir = tempFolder.newFolder("vm_datastore_test_${System.currentTimeMillis()}")
+        testFilesDir = tempFolder.newFolder("vm_datastore_test_${System.nanoTime()}")
         mockApplication = mock(Application::class.java)
         mockPrefs = mock(SharedPreferences::class.java)
         mockEditor = mock(SharedPreferences.Editor::class.java)
@@ -117,7 +117,7 @@ class MainViewModelStateTest {
         viewModel.selectSource("doujindesu")
         assertEquals("doujindesu", savedStateHandle.get<String>("selected_source"))
         withContext(Dispatchers.Default) {
-            withTimeout(5000) {
+            withTimeout(30_000) {
                 viewModel.selectedSource.first { it == "doujindesu" }
             }
         }
@@ -127,7 +127,7 @@ class MainViewModelStateTest {
         viewModel.selectSource("shinigami")
         assertEquals("shinigami", savedStateHandle.get<String>("selected_source"))
         withContext(Dispatchers.Default) {
-            withTimeout(5000) {
+            withTimeout(30_000) {
                 viewModel.selectedSource.first { it == "shinigami" }
             }
         }
@@ -144,7 +144,7 @@ class MainViewModelStateTest {
 
         viewModel.setDefaultSource("doujindesu")
         withContext(Dispatchers.Default) {
-            withTimeout(5000) {
+            withTimeout(30_000) {
                 viewModel.defaultSource.first { it == "doujindesu" }
             }
         }

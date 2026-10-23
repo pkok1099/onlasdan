@@ -2,12 +2,15 @@ package com.onlasdan.comic.ui.components
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.onlasdan.comic.R
@@ -48,13 +51,7 @@ fun AppConfirmDialog(
             Text(text = message, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
         },
         confirmButton = {
-            TextButton(onClick = onConfirm, enabled = !isLoading) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), color = PrimaryPink, strokeWidth = 2.dp)
-                } else {
-                    Text(text = confirmLabel, color = if (destructive) ErrorRed else PrimaryPink)
-                }
-            }
+            ConfirmButton(label = confirmLabel, destructive = destructive, isLoading = isLoading, onClick = onConfirm)
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isLoading) {
@@ -63,4 +60,24 @@ fun AppConfirmDialog(
         },
         containerColor = DarkSurfaceElevated,
     )
+}
+
+// Tombol aksi utama dialog: terisi penuh (Fase B2) — merah error untuk
+// aksi destruktif, pink primer untuk aksi normal; spinner saat loading.
+@Composable
+private fun ConfirmButton(label: String, destructive: Boolean, isLoading: Boolean, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        enabled = !isLoading,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (destructive) ErrorRed else PrimaryPink,
+            contentColor = Color.White,
+        ),
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+        } else {
+            Text(text = label)
+        }
+    }
 }
