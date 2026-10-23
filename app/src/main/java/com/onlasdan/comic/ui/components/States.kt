@@ -70,6 +70,8 @@ fun ErrorState(
     modifier: Modifier = Modifier,
     icon: ImageVector = Icons.Default.ErrorOutline,
     debugMessage: String? = null,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
 ) {
     var showDetail by remember { mutableStateOf(false) }
     Box(
@@ -82,33 +84,20 @@ fun ErrorState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MutedRed,
-                modifier = Modifier.size(48.dp),
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-            )
+            ErrorStateHeader(icon = icon, message = message)
             Spacer(modifier = Modifier.height(Spacing.xs))
             PrimaryButton(
                 text = stringResource(R.string.common_try_again),
                 onClick = onRetry,
                 icon = Icons.Default.Refresh,
             )
-            // Detail teknis TIDAK ditampilkan mentah (Fase B2): cukup di
-            // balik toggle kecil + tombol salin untuk laporan bug beta.
-            if (!debugMessage.isNullOrBlank()) {
-                ErrorDebugDetail(
-                    debugMessage = debugMessage,
-                    expanded = showDetail,
-                    onToggle = { showDetail = !showDetail },
-                )
-            }
+            ErrorStateExtras(
+                actionLabel = actionLabel,
+                onAction = onAction,
+                debugMessage = debugMessage,
+                detailExpanded = showDetail,
+                onToggleDetail = { showDetail = !showDetail },
+            )
         }
     }
 }
@@ -141,5 +130,39 @@ private fun ErrorDebugDetail(debugMessage: String, expanded: Boolean, onToggle: 
         ) {
             Text(text = stringResource(R.string.error_copy_detail), style = MaterialTheme.typography.labelSmall, color = PrimaryPink)
         }
+    }
+}
+
+@Composable
+private fun ErrorStateHeader(icon: ImageVector, message: String) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = MutedRed,
+        modifier = Modifier.size(48.dp),
+    )
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodyMedium,
+        color = TextPrimary,
+        textAlign = TextAlign.Center,
+    )
+}
+
+// Aksi sekunder (Fase C: tawaran unduhan saat offline) + gerbang detail
+// teknis di balik toggle kecil + salin untuk laporan bug beta (Fase B2).
+@Composable
+private fun ErrorStateExtras(
+    actionLabel: String?,
+    onAction: (() -> Unit)?,
+    debugMessage: String?,
+    detailExpanded: Boolean,
+    onToggleDetail: () -> Unit,
+) {
+    if (actionLabel != null && onAction != null) {
+        SecondaryButton(text = actionLabel, onClick = onAction)
+    }
+    if (!debugMessage.isNullOrBlank()) {
+        ErrorDebugDetail(debugMessage = debugMessage, expanded = detailExpanded, onToggle = onToggleDetail)
     }
 }

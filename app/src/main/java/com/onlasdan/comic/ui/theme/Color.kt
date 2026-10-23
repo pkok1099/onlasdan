@@ -1,5 +1,6 @@
 package com.onlasdan.comic.ui.theme
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 val PureBlack = Color(0xFF000000)
@@ -55,3 +56,13 @@ val BookmarkAmber = Color(0xFFFBBF24)
 val TagOrange = Color(0xFFE65100)
 val TagAmber = Color(0xFFFFB74D)
 val TagRed = Color(0xFFD32F2F)
+
+// Gradien scrim banner hero Beranda (dipakai HomeHeroBanner di HomeScreen).
+val HomeHeroGradient = Brush.verticalGradient(
+    colors = listOf(
+        Color.Transparent,
+        PureBlack.copy(alpha = 0.55f),
+        PureBlack.copy(alpha = 0.98f),
+    ),
+    startY = 60f,
+)

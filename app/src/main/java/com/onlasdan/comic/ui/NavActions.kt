@@ -10,3 +10,13 @@ import androidx.compose.runtime.staticCompositionLocalOf
  * (signature ProfileScreen dibekukan baseline detekt).
  */
 val LocalOnExploreHome = staticCompositionLocalOf<() -> Unit> { {} }
+
+// Aksi "Buka Komik Unduhan" untuk state error offline (Fase C): disediakan
+// MainActivity (navigasi ke profile?tab=downloads); null = tidak tersedia
+// di konteks ini sehingga tombolnya tidak ditampilkan.
+val LocalOnOpenDownloads = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+// Aksi kembali yang ditawarkan state error layar-penuh (Fase C): diisi
+// ReaderScreen agar ComicDataScreen bisa menampilkan tombol "Kembali"
+// di cabangnya tanpa mengubah signature (baseline detekt beku).
+val LocalErrorBackAction = staticCompositionLocalOf<(() -> Unit)?> { null }

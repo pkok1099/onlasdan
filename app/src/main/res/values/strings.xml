@@ -156,6 +156,7 @@
     <string name="downloads_chapter_deleted_freed">Bab &#8220;%1$s&#8221; dihapus · %2$s dibebaskan</string>
     <string name="common_undo">Urungkan</string>
     <string name="common_refresh_failed">Gagal memuat data terbaru</string>
+    <string name="common_open_downloads">Buka Komik Unduhan</string>
     <string name="error_show_detail">Lihat detail teknis</string>
     <string name="error_hide_detail">Sembunyikan detail</string>
     <string name="error_copy_detail">Salin detail</string>

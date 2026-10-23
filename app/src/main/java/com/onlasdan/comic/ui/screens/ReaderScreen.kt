@@ -24,6 +24,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.onlasdan.comic.R
 import com.onlasdan.comic.data.db.ComicDatabase
+import com.onlasdan.comic.ui.LocalErrorBackAction
 import com.onlasdan.comic.ui.blueprint.BlueprintProvider
 import com.onlasdan.comic.ui.components.ComicDataScreen
 import com.onlasdan.comic.ui.components.ReaderCanvasPlaceholder
@@ -249,70 +250,72 @@ fun ReaderScreen(
         prefs.edit { putFloat("reader_autonext_delay_seconds", autoNextDelaySeconds) }
     }
 
-    ComicDataScreen(
-        title = stringResource(R.string.reader_title),
-        cacheKey = "reader:$slug:$chapterSlug",
-        cacheTtlMs = 30 * 60 * 1000L,
-        fetchData = {
-            val db = ComicDatabase.get(context)
-            val downloadedPages = withContext(Dispatchers.IO) {
-                db.downloadDao().getDownloadedPages(slug, source.lowercase().trim(), chapterSlug)
-            }
-            if (downloadedPages.isNotEmpty() && downloadedPages.all { File(it.localFilePath).exists() }) {
-                downloadedPages.sortedBy { it.pageIndex }.map { "file://${it.localFilePath}" }
-            } else {
-                SourceRegistry.get(source).pages("$slug:$chapterSlug").map { it.imageUrl }
-            }
-        },
-        loadingContent = { ReaderCanvasPlaceholder(modifier = Modifier.fillMaxSize()) },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-    ) { data ->
-        ReaderContent(
-            source = source,
-            slug = slug,
-            chapterSlug = chapterSlug,
-            images = data,
-            listState = listState,
-            context = context,
-            scope = scope,
-            focusManager = focusManager,
-            blueprint = blueprint,
-            showControls = showControls,
-            onUpdateShowControls = { showControls = it },
-            activeExpandedTab = activeExpandedTab,
-            onUpdateActiveExpandedTab = { activeExpandedTab = it },
-            sheetProgress = sheetProgress,
-            autoScrollActive = autoScrollActive,
-            onAutoScrollToggle = { autoScrollActive = !autoScrollActive },
-            autoScrollSpeed = autoScrollSpeed,
-            onAutoScrollSpeedChange = { autoScrollSpeed = clampAutoScrollSpeed(it) },
-            autoNextEnabled = autoNextEnabled,
-            onAutoNextToggle = {
-                if (!seamlessChaptersEnabled) {
-                    autoNextEnabled = !autoNextEnabled
+    CompositionLocalProvider(LocalErrorBackAction provides onBack) {
+        ComicDataScreen(
+            title = stringResource(R.string.reader_title),
+            cacheKey = "reader:$slug:$chapterSlug",
+            cacheTtlMs = 30 * 60 * 1000L,
+            fetchData = {
+                val db = ComicDatabase.get(context)
+                val downloadedPages = withContext(Dispatchers.IO) {
+                    db.downloadDao().getDownloadedPages(slug, source.lowercase().trim(), chapterSlug)
+                }
+                if (downloadedPages.isNotEmpty() && downloadedPages.all { File(it.localFilePath).exists() }) {
+                    downloadedPages.sortedBy { it.pageIndex }.map { "file://${it.localFilePath}" }
+                } else {
+                    SourceRegistry.get(source).pages("$slug:$chapterSlug").map { it.imageUrl }
                 }
             },
-            autoNextDelaySeconds = autoNextDelaySeconds,
-            onAutoNextDelayChange = { autoNextDelaySeconds = it },
-            immersiveFullscreen = immersiveFullscreen,
-            onToggleFullscreen = { enabled ->
-                immersiveFullscreen = enabled
-                prefs.edit { putBoolean("reader_immersive_fullscreen", enabled) }
-            },
-            keepScreenOnEnabled = keepScreenOnEnabled,
-            onKeepScreenOnChange = { keepScreenOnEnabled = it },
-            seamlessChaptersEnabled = seamlessChaptersEnabled,
-            onSeamlessChange = { seamlessChaptersEnabled = it },
-            nightDimmerAlpha = nightDimmerAlpha,
-            onNightDimmerChange = { nightDimmerAlpha = it },
-            loadedPageSet = loadedPageSet,
-            onSettledImageIncrement = { settledImageCount++ },
-            onUpdateAutoScrollPausedUntil = { autoScrollPausedUntil = it },
-            isBookmarked = isBookmarked,
-            onToggleBookmarkState = { isBookmarked = it },
-            onBack = onBack,
-            onNavigateChapter = onNavigateChapter,
-        )
+            loadingContent = { ReaderCanvasPlaceholder(modifier = Modifier.fillMaxSize()) },
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        ) { data ->
+            ReaderContent(
+                source = source,
+                slug = slug,
+                chapterSlug = chapterSlug,
+                images = data,
+                listState = listState,
+                context = context,
+                scope = scope,
+                focusManager = focusManager,
+                blueprint = blueprint,
+                showControls = showControls,
+                onUpdateShowControls = { showControls = it },
+                activeExpandedTab = activeExpandedTab,
+                onUpdateActiveExpandedTab = { activeExpandedTab = it },
+                sheetProgress = sheetProgress,
+                autoScrollActive = autoScrollActive,
+                onAutoScrollToggle = { autoScrollActive = !autoScrollActive },
+                autoScrollSpeed = autoScrollSpeed,
+                onAutoScrollSpeedChange = { autoScrollSpeed = clampAutoScrollSpeed(it) },
+                autoNextEnabled = autoNextEnabled,
+                onAutoNextToggle = {
+                    if (!seamlessChaptersEnabled) {
+                        autoNextEnabled = !autoNextEnabled
+                    }
+                },
+                autoNextDelaySeconds = autoNextDelaySeconds,
+                onAutoNextDelayChange = { autoNextDelaySeconds = it },
+                immersiveFullscreen = immersiveFullscreen,
+                onToggleFullscreen = { enabled ->
+                    immersiveFullscreen = enabled
+                    prefs.edit { putBoolean("reader_immersive_fullscreen", enabled) }
+                },
+                keepScreenOnEnabled = keepScreenOnEnabled,
+                onKeepScreenOnChange = { keepScreenOnEnabled = it },
+                seamlessChaptersEnabled = seamlessChaptersEnabled,
+                onSeamlessChange = { seamlessChaptersEnabled = it },
+                nightDimmerAlpha = nightDimmerAlpha,
+                onNightDimmerChange = { nightDimmerAlpha = it },
+                loadedPageSet = loadedPageSet,
+                onSettledImageIncrement = { settledImageCount++ },
+                onUpdateAutoScrollPausedUntil = { autoScrollPausedUntil = it },
+                isBookmarked = isBookmarked,
+                onToggleBookmarkState = { isBookmarked = it },
+                onBack = onBack,
+                onNavigateChapter = onNavigateChapter,
+            )
+        }
     }
 }
 

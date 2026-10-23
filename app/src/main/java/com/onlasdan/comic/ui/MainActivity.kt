@@ -216,6 +216,12 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
             LocalBottomBarVisible provides bottomBarVisible,
             LocalCardHoldHandler provides { cardHoldTarget = it },
             LocalActiveCardHoldTarget provides cardHoldTarget,
+            LocalOnOpenDownloads provides {
+                navController.navigate("profile?tab=downloads") {
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
         ) {
             val chromeContextState = remember { mutableStateOf<com.onlasdan.comic.ui.chrome.ChromeContext?>(null) }
             CompositionLocalProvider(LocalChromeContext provides chromeContextState) {

@@ -66,6 +66,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.onlasdan.comic.R
 import com.onlasdan.comic.api.*
+import com.onlasdan.comic.ui.LocalErrorBackAction
+import com.onlasdan.comic.ui.LocalOnOpenDownloads
+import com.onlasdan.comic.ui.source.AppErrorHandler
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.theme.BlushTint
 import com.onlasdan.comic.ui.theme.CardShape
@@ -98,6 +101,8 @@ fun <T> ComicDataScreen(
     var isRefreshing by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var error by remember { mutableStateOf<String?>(null) }
+    var errorDebug by remember { mutableStateOf<String?>(null) }
+    var errorIsOffline by remember { mutableStateOf(false) }
 
     LaunchedEffect(reloadKey, source) {
         val hasData = dataState != null
@@ -121,7 +126,14 @@ fun <T> ComicDataScreen(
         }
         result.onFailure { e ->
             if (e is kotlinx.coroutines.CancellationException) throw e
-            error = e.message
+            // Tanpa data: state error ramah; data lama ada: toast saja (Fase C).
+            if (dataState == null) {
+                error = AppErrorHandler.toUserMessage(e)
+                errorDebug = e.message
+                errorIsOffline = AppErrorHandler.isOfflineError(e)
+            } else {
+                AppToast.error(AppErrorHandler.toUserMessage(e))
+            }
         }
         isLoading = false
         isRefreshing = false
@@ -138,10 +150,17 @@ fun <T> ComicDataScreen(
                 }
 
                 dataState == null -> Column(Modifier.fillMaxSize(), Arrangement.Center, Alignment.CenterHorizontally) {
-                    Text(stringResource(R.string.common_failed_load), style = MaterialTheme.typography.titleLarge)
-                    error?.let { Text(it, modifier = Modifier.padding(top = 8.dp)) }
-                    Spacer(Modifier.height(16.dp))
-                    Button(onClick = { reloadKey++ }) { Text(stringResource(R.string.common_try_again)) }
+                    ErrorState(
+                        message = error ?: stringResource(R.string.common_failed_load),
+                        onRetry = { reloadKey++ },
+                        debugMessage = errorDebug,
+                        actionLabel = if (errorIsOffline) stringResource(R.string.common_open_downloads) else null,
+                        onAction = if (errorIsOffline) LocalOnOpenDownloads.current else null,
+                    )
+                    val errorBack = LocalErrorBackAction.current
+                    if (errorBack != null) {
+                        TextButton(onClick = errorBack) { Text(stringResource(R.string.common_back)) }
+                    }
                 }
 
                 else -> {
@@ -304,20 +323,6 @@ fun HomeComicCard(
         Spacer(modifier = Modifier.height(6.dp))
         Text(title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onBackground, lineHeight = 16.sp)
         latestChapter?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-    }
-}
-
-@Composable
-fun HomeSectionHeader(badgeText: String, title: String, onViewAll: (() -> Unit)? = null) {
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.primary).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                Text(badgeText, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-            }
-            Spacer(Modifier.width(8.dp))
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        }
-        onViewAll?.let { TextButton(onClick = it) { Text(stringResource(R.string.common_view_all), color = MaterialTheme.colorScheme.primary) } }
     }
 }
 

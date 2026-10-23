@@ -26,6 +26,20 @@ object AppErrorHandler {
         }
     }
 
+    // True bila kegagalan berakar pada koneksi yang mati (DNS/gagal
+    // sambung) — pemicu mode offline Fase C (tawaran konten unduhan).
+    // Timeout TIDAK dihitung offline: itu server lambat, bukan putus.
+    fun isOfflineError(throwable: Throwable?): Boolean {
+        var current = throwable
+        while (current != null) {
+            if (current is UnknownHostException || current is java.net.ConnectException) return true
+            current = current.cause
+        }
+        val msg = throwable?.message.orEmpty().lowercase()
+        return "unable to resolve" in msg || "no address" in msg ||
+            "failed to connect" in msg || "network is unreachable" in msg
+    }
+
     fun toUserMessage(errorMessage: String?): String {
         if (errorMessage.isNullOrBlank()) return "Gagal memuat data. Silakan coba lagi."
         val lower = errorMessage.lowercase()

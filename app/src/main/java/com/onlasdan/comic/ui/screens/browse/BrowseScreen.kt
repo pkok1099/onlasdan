@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import com.onlasdan.comic.R
 import com.onlasdan.comic.scraper.GenreMasterData
 import com.onlasdan.comic.ui.LocalBottomBarVisible
+import com.onlasdan.comic.ui.LocalOnOpenDownloads
 import com.onlasdan.comic.ui.blueprint.BlueprintProvider
 import com.onlasdan.comic.ui.blueprint.core.ScreenSlot
 import com.onlasdan.comic.ui.chrome.ChromeContext
@@ -79,6 +80,7 @@ import com.onlasdan.comic.ui.components.NoirBottomSheet
 import com.onlasdan.comic.ui.components.NumberPagination
 import com.onlasdan.comic.ui.components.SimpleTopBar
 import com.onlasdan.comic.ui.screens.BlueprintMissingScreen
+import com.onlasdan.comic.ui.source.AppErrorHandler
 import com.onlasdan.comic.ui.source.Paged
 import com.onlasdan.comic.ui.source.SourceRegistry
 import com.onlasdan.comic.ui.util.NoirMotion
@@ -90,6 +92,7 @@ import com.onlasdan.comic.ui.util.extractSlug
 import com.onlasdan.comic.ui.util.getImageUrl
 import com.onlasdan.comic.ui.util.rememberNoirSpec
 import com.onlasdan.comic.ui.util.rememberSelectedSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -158,12 +161,12 @@ fun BrowseScreen(
     var data by remember(browseCacheKey) { mutableStateOf(UiMemoryCache.peek<Paged<com.onlasdan.comic.ui.source.Comic>>(browseCacheKey)) }
     val filterOptions = remember(source) { SourceRegistry.get(source).availableFilters().toBrowseFilterOptions() }
     var error by remember(source) { mutableStateOf<String?>(null) }
+    var errorIsOffline by remember(source) { mutableStateOf(false) }
     var isLoading by remember(source) { mutableStateOf(true) }
     var isRefreshing by remember(source) { mutableStateOf(false) }
     var retryKey by remember(source) { mutableIntStateOf(0) }
 
-    // Atur ulang penuh — satu-satunya definisi: dipakai konteks chrome
-    // (resetBrowseFilter) dan CTA EmptyState hasil kosong (Fase B2).
+    // Atur ulang penuh: dipakai konteks chrome + CTA EmptyState (Fase B2).
     val resetFilters: () -> Unit = {
         komikuFilters = KomikuFilters()
         komikindoFilters = KomikindoFilters()
@@ -195,34 +198,36 @@ fun BrowseScreen(
         isLoading = !hasData
         isRefreshing = hasData
         error = null
+        errorIsOffline = false
 
         if (UiMemoryCache.isFresh(browseCacheKey) && data != null) {
             isLoading = false
             isRefreshing = false
             return@LaunchedEffect
         }
-        try {
+        val fetchResult = runCatching {
             val (query, filterMap) = buildBrowseFilterMap(source, activeQuery, komikuFilters, komikindoFilters, shinigamiFilters, doujindesuFilters)
-            val result = SourceRegistry.get(source).search(query, filterMap, page)
+            SourceRegistry.get(source).search(query, filterMap, page)
+        }
+        fetchResult.onSuccess { result ->
             data = result
             UiMemoryCache.put(browseCacheKey, result as Any, 5 * 60 * 1000L)
-        } catch (_: Exception) {
-            // Refresh gagal saat data lama masih ada: pertahankan data,
-            // beri tahu lewat toast saja (Fase B2).
-            if (data == null) error = browseErrorFailed else AppToast.error(refreshFailedText)
-        } finally {
-            isLoading = false
-            isRefreshing = false
         }
+        fetchResult.onFailure { e ->
+            if (e is CancellationException) throw e
+            // Refresh gagal: data lama dipertahankan + toast (Fase B2).
+            if (data == null) {
+                error = browseErrorFailed
+                errorIsOffline = AppErrorHandler.isOfflineError(e)
+            } else {
+                AppToast.error(refreshFailedText)
+            }
+        }
+        isLoading = false
+        isRefreshing = false
     }
 
-    LaunchedEffect(source) {
-        listState.scrollToItem(0)
-    }
-
-    LaunchedEffect(page) {
-        listState.scrollToItem(0)
-    }
+    LaunchedEffect(source, page) { listState.scrollToItem(0) }
 
     val state = BrowseState(
         source = source,
@@ -299,7 +304,6 @@ fun BrowseScreen(
         }
 
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
-            // Body slot
             val placements = blueprint.slots[ScreenSlot.Body].orEmpty()
             val showResults = !state.isLoading || state.data != null || state.error != null
             val showPagination = remember(placements, state) {
@@ -308,41 +312,29 @@ fun BrowseScreen(
             placements.forEach { placement ->
                 if (!placement.predicate(state)) return@forEach
                 when (placement.brick) {
-                    BrowseBrick.LayoutRow -> {
-                        Unit // Controls moved into header next to Filters/Reset.
-                    }
+                    BrowseBrick.LayoutRow -> Unit
+
+                    // Kontrol pindah ke header di samping Filter/Reset.
 
                     BrowseBrick.Results -> {
                         if (!showResults) {
                             com.onlasdan.comic.ui.components.PlaceholderGrid()
                         } else {
                             when {
-                                state.isLoading && state.data == null -> {
-                                    com.onlasdan.comic.ui.components.PlaceholderGrid()
-                                }
-
                                 state.error != null -> ErrorState(
                                     message = state.error ?: browseErrorFailed,
                                     onRetry = { retryKey++ },
                                     modifier = Modifier.fillMaxSize(),
+                                    actionLabel = if (errorIsOffline) stringResource(R.string.common_open_downloads) else null,
+                                    onAction = if (errorIsOffline) LocalOnOpenDownloads.current else null,
                                 )
 
-                                state.data == null -> EmptyState(
-                                    message = stringResource(R.string.browse_empty_result),
-                                    actionLabel = stringResource(R.string.browse_btn_reset),
-                                    onAction = resetFilters,
-                                    modifier = Modifier.fillMaxSize(),
-                                )
+                                state.data == null -> BrowseEmptyState(onReset = resetFilters)
 
                                 else -> {
                                     val data = requireNotNull(state.data)
                                     if (data.items.isEmpty()) {
-                                        EmptyState(
-                                            message = stringResource(R.string.browse_empty_result),
-                                            actionLabel = stringResource(R.string.browse_btn_reset),
-                                            onAction = resetFilters,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
+                                        BrowseEmptyState(onReset = resetFilters)
                                     } else {
                                         Box(modifier = Modifier.weight(1f)) {
                                             var browseShown by remember { mutableStateOf(false) }
@@ -410,13 +402,11 @@ fun BrowseScreen(
 
                     BrowseBrick.Pagination -> Unit
 
-                    // Rendered as a footer for better UX.
                     else -> Unit
                 }
             }
         }
 
-        // BottomSheet slot
         blueprint.slots[ScreenSlot.BottomSheet].orEmpty().forEach { placement ->
             if (!placement.predicate(state)) return@forEach
             when (placement.brick) {
@@ -1173,4 +1163,14 @@ private fun SimpleSelect(
             }
         }
     }
+}
+
+@Composable
+private fun BrowseEmptyState(onReset: () -> Unit) {
+    EmptyState(
+        message = stringResource(R.string.browse_empty_result),
+        actionLabel = stringResource(R.string.browse_btn_reset),
+        onAction = onReset,
+        modifier = Modifier.fillMaxSize(),
+    )
 }

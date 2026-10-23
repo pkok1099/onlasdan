@@ -20,7 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -33,6 +32,7 @@ import coil.request.ImageRequest
 import com.google.gson.reflect.TypeToken
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.LocalBottomBarVisible
+import com.onlasdan.comic.ui.LocalOnOpenDownloads
 import com.onlasdan.comic.ui.components.*
 import com.onlasdan.comic.ui.source.*
 import com.onlasdan.comic.ui.theme.*
@@ -68,6 +68,7 @@ fun HomeScreen(
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var errorDebugMessage by remember { mutableStateOf<String?>(null) }
+    var errorIsOffline by remember { mutableStateOf(false) }
     var entranceDone by remember { mutableStateOf(false) }
     var showGenreBrowserSheet by remember { mutableStateOf(false) }
     var sectionLayoutMap by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
@@ -99,6 +100,7 @@ fun HomeScreen(
         } catch (e: Exception) {
             errorMessage = AppErrorHandler.toUserMessage(e)
             errorDebugMessage = e.message
+            errorIsOffline = AppErrorHandler.isOfflineError(e)
             android.util.Log.e("HomeScreen", "loadHome gagal (${requestSource.id})", e)
         } finally {
             if (generation == loadGeneration) isLoading = false
@@ -109,6 +111,11 @@ fun HomeScreen(
         entranceDone = false
         sections = emptyList()
         loadHome()
+    }
+
+    // Degradasi anggun (Fase C): refresh gagal -> konten dipertahankan + toast.
+    LaunchedEffect(errorMessage) {
+        if (errorMessage != null && sections.isNotEmpty()) AppToast.error(checkNotNull(errorMessage))
     }
 
     Box(
@@ -163,12 +170,14 @@ fun HomeScreen(
                     }
                 }
             }
-        } else if (errorMessage != null) {
+        } else if (errorMessage != null && sections.isEmpty()) {
             ErrorState(
                 message = errorMessage ?: "Gagal memuat feed beranda",
                 onRetry = { scope.launch { loadHome() } },
                 modifier = Modifier.align(Alignment.Center),
                 debugMessage = errorDebugMessage,
+                actionLabel = if (errorIsOffline) stringResource(R.string.common_open_downloads) else null,
+                onAction = if (errorIsOffline) LocalOnOpenDownloads.current else null,
             )
         } else if (sections.isEmpty() && !isLoading) {
             EmptyState(
@@ -432,15 +441,6 @@ fun HomeScreen(
         }
     }
 }
-
-private val HomeHeroGradient = Brush.verticalGradient(
-    colors = listOf(
-        Color.Transparent,
-        PureBlack.copy(alpha = 0.55f),
-        PureBlack.copy(alpha = 0.98f),
-    ),
-    startY = 60f,
-)
 
 @Composable
 fun HomeHeroBanner(
