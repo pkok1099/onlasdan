@@ -4,6 +4,7 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +40,8 @@ data class ToastMessage(
     val icon: ImageVector? = null,
     val isError: Boolean = false,
     val isSuccess: Boolean = false,
+    val actionLabel: String? = null,
+    val onAction: (() -> Unit)? = null,
 )
 
 object AppToast {
@@ -51,6 +54,8 @@ object AppToast {
         icon: ImageVector? = null,
         isError: Boolean = false,
         isSuccess: Boolean = false,
+        actionLabel: String? = null,
+        onAction: (() -> Unit)? = null,
     ) {
         dismissJob?.cancel()
         _currentToast.value = ToastMessage(
@@ -58,6 +63,8 @@ object AppToast {
             icon = icon,
             isError = isError,
             isSuccess = isSuccess,
+            actionLabel = actionLabel,
+            onAction = onAction,
         )
     }
 
@@ -69,7 +76,14 @@ object AppToast {
         show(text = text, icon = icon, isError = true)
     }
 
+    // Toast beraksi (Fase A UX): tombol seperti "Urungkan" dengan durasi
+    // tampil lebih panjang (5 detik) agar sempat dijangkau pengguna.
+    fun action(text: String, actionLabel: String, onAction: () -> Unit, icon: ImageVector? = null) {
+        show(text = text, icon = icon, actionLabel = actionLabel, onAction = onAction)
+    }
+
     fun dismiss() {
+        dismissJob?.cancel()
         _currentToast.value = null
     }
 
@@ -105,7 +119,7 @@ fun NoirToastHost(
                     launch { alpha.animateTo(1f, NoirMotion.effectsFastSpring()) }
                     offsetY.animateTo(0f, NoirMotion.pillThrowSpring())
                 }
-                delay(2600L)
+                delay(if (current.actionLabel != null) 5000L else 2600L)
                 withContext(NoirForceMotionScale) {
                     launch { alpha.animateTo(0f, NoirMotion.effectsFastSpring()) }
                     offsetY.animateTo(-slidePx, NoirMotion.pillDropSpring())
@@ -143,40 +157,53 @@ fun NoirToastHost(
                 },
             contentAlignment = Alignment.TopCenter,
         ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = NoirSurface.copy(alpha = 0.96f),
-                border = BorderStroke(1.dp, accentColor.copy(alpha = 0.45f)),
-                shadowElevation = 10.dp,
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    if (activeMsg.icon != null) {
-                        Icon(
-                            imageVector = activeMsg.icon,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(17.dp),
-                        )
-                    } else {
-                        // Rose/Accent dot indicator ala card.html
-                        Box(
-                            modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(accentColor),
-                        )
-                    }
+            ToastPill(msg = activeMsg, accentColor = accentColor) {
+                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                activeMsg.onAction?.invoke()
+                AppToast.dismiss()
+            }
+        }
+    }
+}
 
-                    Text(
-                        text = activeMsg.text,
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                        color = TextPrimary,
-                    )
-                }
+// Label aksi toast (mis. "Urungkan") — diekstrak dari NoirToastHost agar
+// kompleksitas kognitif host tetap di bawah gerbang detekt.
+@Composable
+private fun ToastActionLabel(label: String, color: Color, onClick: () -> Unit) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+        color = color,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+    )
+}
+
+// Pil toast: permukaan + baris isi (ikon/titik aksen, teks, label aksi).
+// Diekstrak dari NoirToastHost demi gerbang kompleksitas kognitif detekt.
+@Composable
+private fun ToastPill(msg: ToastMessage, accentColor: Color, onActionClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = NoirSurface.copy(alpha = 0.96f),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.45f)),
+        shadowElevation = 10.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (msg.icon != null) {
+                Icon(imageVector = msg.icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(17.dp))
+            } else {
+                // Rose/Accent dot indicator ala card.html
+                Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(accentColor))
+            }
+            Text(text = msg.text, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium), color = TextPrimary)
+            if (msg.actionLabel != null) {
+                ToastActionLabel(label = msg.actionLabel, color = accentColor, onClick = onActionClick)
             }
         }
     }

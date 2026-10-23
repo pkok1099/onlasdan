@@ -28,6 +28,21 @@ fun PrimaryButton(
     icon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
+    PrimaryButton(text = text, onClick = onClick, modifier = modifier, icon = icon, enabled = enabled, isLoading = false)
+}
+
+// Varian berstatus loading (Fase A UX): saat isLoading, tombol menampilkan
+// spinner seukuran ikon dan menonaktifkan dirinya (anti double-tap untuk
+// operasi async seperti backup/restore).
+@Composable
+fun PrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    isLoading: Boolean,
+) {
     val interactionSource = remember { MutableInteractionSource() }
 
     Button(
@@ -35,29 +50,24 @@ fun PrimaryButton(
         modifier = modifier
             .pressScale(interactionSource)
             .heightIn(min = 44.dp),
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         shape = ButtonShape,
         interactionSource = interactionSource,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = PrimaryPink,
-            contentColor = PureBlack,
-            disabledContainerColor = DarkSurfaceElevated,
-            disabledContentColor = TextSecondary,
-        ),
+        colors = ButtonDefaults.buttonColors(containerColor = PrimaryPink, contentColor = PureBlack, disabledContainerColor = DarkSurfaceElevated, disabledContentColor = TextSecondary),
         contentPadding = PaddingValues(horizontal = Spacing.xl, vertical = Spacing.sm),
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(modifier = Modifier.width(Spacing.sm))
+        when {
+            isLoading -> {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = PureBlack, strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(Spacing.sm))
+            }
+
+            icon != null -> {
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(Spacing.sm))
+            }
         }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-        )
+        Text(text = text, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
     }
 }
 
@@ -69,6 +79,19 @@ fun SecondaryButton(
     icon: ImageVector? = null,
     enabled: Boolean = true,
 ) {
+    SecondaryButton(text = text, onClick = onClick, modifier = modifier, icon = icon, enabled = enabled, isLoading = false)
+}
+
+// Varian berstatus loading — pola yang sama dengan PrimaryButton.
+@Composable
+fun SecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    isLoading: Boolean,
+) {
     val interactionSource = remember { MutableInteractionSource() }
 
     OutlinedButton(
@@ -76,31 +99,25 @@ fun SecondaryButton(
         modifier = modifier
             .pressScale(interactionSource)
             .heightIn(min = 44.dp),
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         shape = ButtonShape,
         interactionSource = interactionSource,
         border = BorderStroke(StrokeWidth.regular, DarkOutline),
-        colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = DarkSurface,
-            contentColor = TextPrimary,
-            disabledContainerColor = PureBlack,
-            disabledContentColor = TextSecondary,
-        ),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = DarkSurface, contentColor = TextPrimary, disabledContainerColor = PureBlack, disabledContentColor = TextSecondary),
         contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.xs),
     ) {
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = TextPrimary,
-            )
-            Spacer(modifier = Modifier.width(Spacing.xs))
+        when {
+            isLoading -> {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = TextPrimary, strokeWidth = 2.dp)
+                Spacer(modifier = Modifier.width(Spacing.xs))
+            }
+
+            icon != null -> {
+                Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextPrimary)
+                Spacer(modifier = Modifier.width(Spacing.xs))
+            }
         }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-        )
+        Text(text = text, style = MaterialTheme.typography.labelLarge)
     }
 }
 

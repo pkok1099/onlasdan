@@ -1,5 +1,7 @@
 package com.onlasdan.comic.ui.components
 
+import android.view.HapticFeedbackConstants
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -43,7 +45,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,6 +53,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,7 +75,9 @@ import com.onlasdan.comic.ui.theme.TextSecondary
 import com.onlasdan.comic.ui.util.DatabaseBackupStore
 import com.onlasdan.comic.ui.util.UiPreferences
 import com.onlasdan.comic.ui.util.noirClickable
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -131,8 +135,27 @@ fun ProfileBackupSheetContent(
     val backupFailedText = stringResource(R.string.storage_backup_failed)
     val restoreSuccessText = stringResource(R.string.storage_restore_success)
     val restoreFailedText = stringResource(R.string.storage_restore_failed)
-    val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+    val view = LocalView.current
+    // Scope yang selamat dari penutupan sheet: operasi DB krusial (backup/
+    // restore) tidak boleh batal di tengah hanya karena sheet tertutup.
+    val appScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Main) }
+    // Operasi penyimpanan yang sedang berjalan ("" = diam). Selama terisi:
+    // tombol penyimpanan nonaktif, navigasi ditahan, back ditahan (Fase A UX).
+    var busyAction by remember { mutableStateOf("") }
+    BackHandler(enabled = busyAction.isNotEmpty()) {}
+
+    fun runStoreOp(action: String, op: suspend () -> Result<*>, failText: String, onSuccess: () -> Unit) {
+        if (busyAction.isNotEmpty()) return
+        busyAction = action
+        appScope.launch(Dispatchers.IO) {
+            val result = op()
+            withContext(Dispatchers.Main) {
+                busyAction = ""
+                if (result.isSuccess) onSuccess() else AppToast.error(failText)
+            }
+        }
+    }
 
     var currentStorageUri by remember { mutableStateOf(DatabaseBackupStore.getCustomTreeUri(context)) }
     var lastBackupTime by remember { mutableLongStateOf(DatabaseBackupStore.getLastBackupTime(context)) }
@@ -146,16 +169,10 @@ fun ProfileBackupSheetContent(
             DatabaseBackupStore.setCustomTreeUri(context, uri)
             DatabaseBackupStore.setBackupEnabled(context, true)
             currentStorageUri = uri
-            scope.launch(Dispatchers.IO) {
-                val result = DatabaseBackupStore.exportDb(context)
-                withContext(Dispatchers.Main) {
-                    if (result.isSuccess) {
-                        lastBackupTime = DatabaseBackupStore.getLastBackupTime(context)
-                        AppToast.success(backupSuccessText)
-                    } else {
-                        AppToast.error(backupFailedText)
-                    }
-                }
+            runStoreOp("backup", { DatabaseBackupStore.exportDb(context) }, backupFailedText) {
+                lastBackupTime = DatabaseBackupStore.getLastBackupTime(context)
+                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                AppToast.success(backupSuccessText)
             }
         }
     }
@@ -305,16 +322,20 @@ fun ProfileBackupSheetContent(
                     icon = Icons.Default.Bookmark,
                     title = stringResource(R.string.chrome_menu_bookmarks),
                     onClick = {
-                        onDismiss()
-                        onNavigateBookmarks()
+                        if (busyAction.isEmpty()) {
+                            onDismiss()
+                            onNavigateBookmarks()
+                        }
                     },
                 )
                 ProfileNavItem(
                     icon = Icons.Default.History,
                     title = stringResource(R.string.chrome_menu_history),
                     onClick = {
-                        onDismiss()
-                        onNavigateHistory()
+                        if (busyAction.isEmpty()) {
+                            onDismiss()
+                            onNavigateHistory()
+                        }
                     },
                 )
                 chromeContext?.openDownloads?.let { openDownloads ->
@@ -323,8 +344,10 @@ fun ProfileBackupSheetContent(
                             icon = Icons.Default.CloudDownload,
                             title = stringResource(R.string.chrome_menu_downloads),
                             onClick = {
-                                onDismiss()
-                                openDownloads()
+                                if (busyAction.isEmpty()) {
+                                    onDismiss()
+                                    openDownloads()
+                                }
                             },
                         )
                         if (unreadDownloads > 0) {
@@ -345,16 +368,20 @@ fun ProfileBackupSheetContent(
                     icon = Icons.Default.Person,
                     title = stringResource(R.string.chrome_menu_profile_backup),
                     onClick = {
-                        onDismiss()
-                        onNavigateProfile()
+                        if (busyAction.isEmpty()) {
+                            onDismiss()
+                            onNavigateProfile()
+                        }
                     },
                 )
                 ProfileNavItem(
                     icon = Icons.Default.Settings,
                     title = stringResource(R.string.screen_settings),
                     onClick = {
-                        onDismiss()
-                        onNavigateSettings()
+                        if (busyAction.isEmpty()) {
+                            onDismiss()
+                            onNavigateSettings()
+                        }
                     },
                 )
             }
@@ -411,20 +438,14 @@ fun ProfileBackupSheetContent(
                         modifier = Modifier
                             .weight(1f)
                             .height(46.dp)
-                            .noirClickable(pressedScale = 0.94f) {
+                            .noirClickable(pressedScale = 0.94f, enabled = busyAction.isEmpty()) {
                                 if (currentStorageUri == null) {
                                     pickFolderLauncher.launch(null)
                                 } else {
-                                    scope.launch(Dispatchers.IO) {
-                                        val result = DatabaseBackupStore.exportDb(context)
-                                        withContext(Dispatchers.Main) {
-                                            if (result.isSuccess) {
-                                                lastBackupTime = DatabaseBackupStore.getLastBackupTime(context)
-                                                AppToast.success(backupSuccessText)
-                                            } else {
-                                                AppToast.error(backupFailedText)
-                                            }
-                                        }
+                                    runStoreOp("backup", { DatabaseBackupStore.exportDb(context) }, backupFailedText) {
+                                        lastBackupTime = DatabaseBackupStore.getLastBackupTime(context)
+                                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                        AppToast.success(backupSuccessText)
                                     }
                                 }
                             },
@@ -437,7 +458,7 @@ fun ProfileBackupSheetContent(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            BackupButtonContent(Icons.Default.CloudUpload, stringResource(R.string.storage_btn_backup_now), PrimaryPink, PrimaryPink, FontWeight.SemiBold)
+                            BackupButtonContent(Icons.Default.CloudUpload, stringResource(R.string.storage_btn_backup_now), PrimaryPink, PrimaryPink, FontWeight.SemiBold, loading = busyAction == "backup")
                         }
                     }
 
@@ -446,17 +467,11 @@ fun ProfileBackupSheetContent(
                         modifier = Modifier
                             .weight(1f)
                             .height(46.dp)
-                            .noirClickable(pressedScale = 0.94f) {
-                                scope.launch(Dispatchers.IO) {
-                                    val result = DatabaseBackupStore.restoreDb(context)
-                                    withContext(Dispatchers.Main) {
-                                        if (result.isSuccess) {
-                                            AppToast.success(restoreSuccessText)
-                                            onDismiss()
-                                        } else {
-                                            AppToast.error(restoreFailedText)
-                                        }
-                                    }
+                            .noirClickable(pressedScale = 0.94f, enabled = busyAction.isEmpty()) {
+                                runStoreOp("restore", { DatabaseBackupStore.restoreDb(context) }, restoreFailedText) {
+                                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                                    AppToast.success(restoreSuccessText)
+                                    onDismiss()
                                 }
                             },
                         shape = RoundedCornerShape(12.dp),
@@ -468,7 +483,7 @@ fun ProfileBackupSheetContent(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            BackupButtonContent(Icons.Default.CloudDownload, stringResource(R.string.storage_restore_confirm), TextSecondary, TextPrimary, FontWeight.Medium)
+                            BackupButtonContent(Icons.Default.CloudDownload, stringResource(R.string.storage_restore_confirm), TextSecondary, TextPrimary, FontWeight.Medium, loading = busyAction == "restore")
                         }
                     }
                 }
@@ -480,7 +495,7 @@ fun ProfileBackupSheetContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(38.dp)
-                        .noirClickable(pressedScale = 0.96f) {
+                        .noirClickable(pressedScale = 0.96f, enabled = busyAction.isEmpty()) {
                             pickFolderLauncher.launch(null)
                         },
                     shape = RoundedCornerShape(10.dp),
@@ -548,23 +563,4 @@ private fun ProfileNavItem(
             modifier = Modifier.size(12.dp),
         )
     }
-}
-
-@Composable
-private fun BackupButtonContent(icon: ImageVector, text: String, iconTint: Color, textColor: Color, fontWeight: FontWeight) {
-    Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(18.dp))
-    Spacer(Modifier.width(6.dp))
-    Text(text = text, style = MaterialTheme.typography.bodySmall, fontWeight = fontWeight, color = textColor)
-}
-
-@Composable
-private fun SheetSectionTitle(text: String, padded: Boolean = false) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.Bold,
-        color = PrimaryPink,
-        letterSpacing = 1.sp,
-        modifier = if (padded) Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs) else Modifier,
-    )
 }
