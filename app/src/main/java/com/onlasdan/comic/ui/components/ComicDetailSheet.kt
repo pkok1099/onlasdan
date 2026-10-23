@@ -100,7 +100,12 @@ fun ComicDetailSheet(
     val downloads by db.downloadDao().observeDownloads(comicId, source.id).collectAsState(initial = emptyList<DownloadedChapterEntity>())
     val pendingDeletes by DelayedDelete.pending.collectAsState(initial = emptySet())
     val visibleDownloads = remember(downloads, pendingDeletes) { downloads.filter { downloadDeleteKey(it.source, it.comicSlug, it.chapterSlug) !in pendingDeletes } }
-    val downloadMap by remember { derivedStateOf { visibleDownloads.associateBy { it.chapterSlug } } }
+    // BUKAN derivedStateOf: visibleDownloads adalah List biasa (bukan snapshot
+    // state), jadi derivedStateOf tidak pernah menghitung ulang dan peta status
+    // unduhan membeku di nilai saat sheet dibuka (bug: indikator tidak berubah
+    // sampai sheet ditutup-dibuka). remember ber-key menghitung ulang tepat
+    // saat daftar unduhan berubah.
+    val downloadMap = remember(visibleDownloads) { visibleDownloads.associateBy { it.chapterSlug } }
 
     var comicDetail by remember { mutableStateOf<Comic?>(null) }
     var chapters by remember { mutableStateOf<List<Chapter>>(emptyList()) }
