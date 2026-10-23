@@ -1,6 +1,7 @@
 package com.onlasdan.comic.ui.screens
 
 import android.text.format.Formatter
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,7 +64,9 @@ import com.onlasdan.comic.ui.theme.DarkOutline
 import com.onlasdan.comic.ui.theme.PrimaryPink
 import com.onlasdan.comic.ui.theme.TextPrimary
 import com.onlasdan.comic.ui.theme.TextSecondary
+import com.onlasdan.comic.ui.util.DelayedDelete
 import com.onlasdan.comic.ui.util.UiPreferences
+import com.onlasdan.comic.ui.util.downloadDeleteKey
 import com.onlasdan.comic.ui.util.noirClickable
 import kotlinx.coroutines.launch
 
@@ -71,6 +75,14 @@ import kotlinx.coroutines.launch
  * unduhan (thumbnail, judul, total) — ketuk komik membuka sheet berisi
  * chapter terunduhnya untuk dibaca, dicoba lagi, dibatalkan, atau dihapus.
  */
+// Soft-delete (Fase A2): chapter yang menunggu jendela undo disembunyikan
+// dari daftar; berkasnya baru dihapus setelah jendela berakhir.
+@Composable
+private fun rememberVisibleDownloads(downloads: List<DownloadedChapterEntity>): List<DownloadedChapterEntity> {
+    val pendingDeletes by DelayedDelete.pending.collectAsStateWithLifecycle(initialValue = emptySet())
+    return remember(downloads, pendingDeletes) { downloads.filter { downloadDeleteKey(it.source, it.comicSlug, it.chapterSlug) !in pendingDeletes } }
+}
+
 @Composable
 fun DownloadsManagerContent(
     onReadChapter: (comicSlug: String, source: String, chapterSlug: String) -> Unit,
@@ -81,10 +93,11 @@ fun DownloadsManagerContent(
     val downloads by db.downloadDao().observeAllDownloads().collectAsStateWithLifecycle(initialValue = emptyList())
     var selectedComic by remember { mutableStateOf<Pair<String, String>?>(null) }
     var comicToDelete by remember { mutableStateOf<DownloadedChapterEntity?>(null) }
-    val groups = remember(downloads) { downloads.groupBy { it.source to it.comicSlug } }
+    val visibleDownloads = rememberVisibleDownloads(downloads)
+    val groups = remember(visibleDownloads) { visibleDownloads.groupBy { it.source to it.comicSlug } }
 
     Box(modifier = modifier.fillMaxSize()) {
-        DownloadsList(downloads, groups, onOpenComic = { selectedComic = it })
+        DownloadsList(visibleDownloads, groups, onOpenComic = { selectedComic = it })
         SelectedComicSheet(
             groups = groups,
             selectedComic = selectedComic,
@@ -92,17 +105,23 @@ fun DownloadsManagerContent(
             onReadChapter = onReadChapter,
             onDeleteAll = { comicToDelete = it },
         )
-        comicToDelete?.let { sample ->
-            DeleteAllDownloadsDialog(
-                chapters = downloads.filter { it.source == sample.source && it.comicSlug == sample.comicSlug },
-                onConfirm = {
-                    ChapterDownloadManager.deleteComicDownloads(context, sample.comicSlug, sample.source)
-                    comicToDelete = null
-                    selectedComic = null
-                },
-                onDismiss = { comicToDelete = null },
-            )
-        }
+        DeleteAllDialogHost(
+            sample = comicToDelete,
+            chapters = visibleDownloads.filter { it.source == comicToDelete?.source && it.comicSlug == comicToDelete?.comicSlug },
+            onConfirm = { s ->
+                ChapterDownloadManager.deleteComicDownloads(context, s.comicSlug, s.source)
+                comicToDelete = null
+                selectedComic = null
+            },
+            onDismiss = { comicToDelete = null },
+        )
+    }
+}
+
+@Composable
+private fun DeleteAllDialogHost(sample: DownloadedChapterEntity?, chapters: List<DownloadedChapterEntity>, onConfirm: (DownloadedChapterEntity) -> Unit, onDismiss: () -> Unit) {
+    if (sample != null) {
+        DeleteAllDownloadsDialog(chapters = chapters, onConfirm = { onConfirm(sample) }, onDismiss = onDismiss)
     }
 }
 
@@ -263,12 +282,17 @@ private fun DownloadStatusLine(entity: DownloadedChapterEntity) {
 @Composable
 private fun DeleteDownloadButton(entity: DownloadedChapterEntity) {
     val context = LocalContext.current
-    val freedFormat = stringResource(R.string.downloads_deleted_freed)
-    val deletedText = stringResource(R.string.downloads_deleted)
+    val view = LocalView.current
+    val deletedFormat = stringResource(R.string.downloads_chapter_deleted)
+    val deletedFreedFormat = stringResource(R.string.downloads_chapter_deleted_freed)
+    val undoText = stringResource(R.string.common_undo)
     IconButton(
         onClick = {
-            ChapterDownloadManager.deleteDownload(context, entity.comicSlug, entity.source, entity.chapterSlug)
-            if (entity.sizeBytes > 0L) AppToast.success(freedFormat.format(Formatter.formatFileSize(context, entity.sizeBytes))) else AppToast.show(deletedText)
+            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            val key = downloadDeleteKey(entity.source, entity.comicSlug, entity.chapterSlug)
+            DelayedDelete.schedule(key) { ChapterDownloadManager.deleteDownload(context, entity.comicSlug, entity.source, entity.chapterSlug) }
+            val message = if (entity.sizeBytes > 0L) deletedFreedFormat.format(entity.chapterTitle, Formatter.formatFileSize(context, entity.sizeBytes)) else deletedFormat.format(entity.chapterTitle)
+            AppToast.action(message, undoText) { DelayedDelete.cancel(key) }
         },
         modifier = Modifier.size(48.dp),
     ) {
@@ -338,15 +362,15 @@ private fun DeleteAllDownloadsDialog(
     val context = LocalContext.current
     val freedFormat = stringResource(R.string.downloads_deleted_freed)
     val deletedText = stringResource(R.string.downloads_deleted)
+    val totalBytes = chapters.sumOf { it.sizeBytes }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.downloads_delete_all)) },
-        text = { Text(stringResource(R.string.downloads_delete_all_confirm, chapters.first().comicTitle)) },
+        text = { Text(stringResource(R.string.downloads_delete_all_confirm, chapters.first().comicTitle, chapters.size, Formatter.formatFileSize(context, totalBytes))) },
         confirmButton = {
             TextButton(
                 onClick = {
                     onConfirm()
-                    val totalBytes = chapters.sumOf { it.sizeBytes }
                     if (totalBytes > 0L) AppToast.success(freedFormat.format(Formatter.formatFileSize(context, totalBytes))) else AppToast.show(deletedText)
                 },
             ) { Text(stringResource(R.string.detail_confirm)) }

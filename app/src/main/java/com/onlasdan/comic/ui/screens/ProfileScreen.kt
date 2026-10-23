@@ -1,5 +1,6 @@
 package com.onlasdan.comic.ui.screens
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +46,7 @@ import com.onlasdan.comic.ui.blueprint.core.ScreenSlot
 import com.onlasdan.comic.ui.chrome.ChromeContext
 import com.onlasdan.comic.ui.chrome.ChromeRouteTag
 import com.onlasdan.comic.ui.chrome.LocalChromeContext
+import com.onlasdan.comic.ui.components.AppToast
 import com.onlasdan.comic.ui.components.LatestGrid
 import com.onlasdan.comic.ui.screens.profile.ProfileBrick
 import com.onlasdan.comic.ui.screens.profile.ProfileLayoutState
@@ -59,6 +62,7 @@ import com.onlasdan.comic.ui.util.rememberNoirSpec
 import com.onlasdan.comic.ui.util.rememberSelectedSource
 import com.onlasdan.comic.ui.util.removeHistoryEntry
 import com.onlasdan.comic.ui.util.setSelectedSource
+import com.onlasdan.comic.ui.util.upsertHistory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -101,6 +105,12 @@ fun ProfileScreen(
     var history by remember { mutableStateOf<List<HistoryEntry>>(emptyList()) }
     var historySort by remember { mutableStateOf(HistorySort.Newest) }
     var historyMenuOpen by remember { mutableStateOf(false) }
+    var showClearHistoryDialog by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    val clearHistoryConfirmFormat = stringResource(R.string.profile_clear_history_confirm)
+    val historyClearedText = stringResource(R.string.profile_history_cleared)
+    val historyRemovedFormat = stringResource(R.string.profile_history_removed)
+    val undoText = stringResource(R.string.common_undo)
     val listState = rememberLazyListState()
     val headerVisible = rememberSaveable { mutableStateOf(true) }
     bindAutoHideOnScroll(listState = listState, headerVisible = headerVisible, bottomBarVisible = bottomBarVisible)
@@ -213,8 +223,7 @@ fun ProfileScreen(
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.profile_clear_history)) },
                                                 onClick = {
-                                                    clearHistory(context)
-                                                    scope.launch { reload() }
+                                                    showClearHistoryDialog = true
                                                     historyMenuOpen = false
                                                 },
                                             )
@@ -276,8 +285,13 @@ fun ProfileScreen(
                                     onHistoryClick(entry.comicSlug, entry.source, entry.chapterSlug)
                                 },
                                 onDelete = { entry ->
+                                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                                     removeHistoryEntry(context, entry)
                                     scope.launch { reload() }
+                                    AppToast.action(historyRemovedFormat.format(entry.title), undoText) {
+                                        upsertHistory(context, entry)
+                                        scope.launch { reload() }
+                                    }
                                 },
                             )
                         }
@@ -287,6 +301,30 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+
+    // Konfirmasi bersihkan riwayat (Fase A2): aksi massal wajib dialog
+    // dengan jumlah entri yang akan hilang + toast hasil.
+    if (showClearHistoryDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearHistoryDialog = false },
+            title = { Text(stringResource(R.string.profile_clear_history)) },
+            text = { Text(clearHistoryConfirmFormat.format(history.size)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        clearHistory(context)
+                        scope.launch { reload() }
+                        showClearHistoryDialog = false
+                        view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                        AppToast.success(historyClearedText)
+                    },
+                ) { Text(stringResource(R.string.detail_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearHistoryDialog = false }) { Text(stringResource(R.string.detail_cancel)) }
+            },
+        )
     }
 }
 

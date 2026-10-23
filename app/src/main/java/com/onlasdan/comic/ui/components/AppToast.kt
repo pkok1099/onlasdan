@@ -78,7 +78,7 @@ object AppToast {
 
     // Toast beraksi (Fase A UX): tombol seperti "Urungkan" dengan durasi
     // tampil lebih panjang (5 detik) agar sempat dijangkau pengguna.
-    fun action(text: String, actionLabel: String, onAction: () -> Unit, icon: ImageVector? = null) {
+    fun action(text: String, actionLabel: String, icon: ImageVector? = null, onAction: () -> Unit) {
         show(text = text, icon = icon, actionLabel = actionLabel, onAction = onAction)
     }
 

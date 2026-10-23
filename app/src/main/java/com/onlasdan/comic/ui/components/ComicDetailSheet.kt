@@ -3,6 +3,7 @@ package com.onlasdan.comic.ui.components
 import android.content.Intent
 import android.net.Uri
 import android.text.format.Formatter
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -53,7 +55,9 @@ import com.onlasdan.comic.ui.download.ChapterDownloadManager
 import com.onlasdan.comic.ui.source.*
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.DbChangeNotifier
+import com.onlasdan.comic.ui.util.DelayedDelete
 import com.onlasdan.comic.ui.util.chapterSlugOf
+import com.onlasdan.comic.ui.util.downloadDeleteKey
 import com.onlasdan.comic.ui.util.markChaptersRead
 import com.onlasdan.comic.ui.util.pressScale
 import kotlinx.coroutines.CancellationException
@@ -73,7 +77,11 @@ fun ComicDetailSheet(
 ) {
     val context = LocalContext.current
     val shareComicText = stringResource(R.string.detail_share_comic)
-    val deleteDownloadText = stringResource(R.string.detail_delete_download)
+    val chapterDeletedFormat = stringResource(R.string.downloads_chapter_deleted)
+    val chapterDeletedFreedFormat = stringResource(R.string.downloads_chapter_deleted_freed)
+    val bookmarkRemovedFormat = stringResource(R.string.detail_bookmark_removed)
+    val undoText = stringResource(R.string.common_undo)
+    val view = LocalView.current
     val downloadQueuedText = stringResource(R.string.detail_download_queued)
     val downloadCancelledText = stringResource(R.string.detail_download_cancelled)
     val deletedAllDownloadsText = stringResource(R.string.detail_deleted_all_downloads)
@@ -89,7 +97,9 @@ fun ComicDetailSheet(
     val readChapters = remember(readChapterList) { readChapterList.toSet() }
     val historyEntity by db.historyDao().observeHistory(comicId, source.id).collectAsStateWithLifecycle(initialValue = null)
     val downloads by db.downloadDao().observeDownloads(comicId, source.id).collectAsState(initial = emptyList<DownloadedChapterEntity>())
-    val downloadMap by remember { derivedStateOf { downloads.associateBy { it.chapterSlug } } }
+    val pendingDeletes by DelayedDelete.pending.collectAsState(initial = emptySet())
+    val visibleDownloads = remember(downloads, pendingDeletes) { downloads.filter { downloadDeleteKey(it.source, it.comicSlug, it.chapterSlug) !in pendingDeletes } }
+    val downloadMap by remember { derivedStateOf { visibleDownloads.associateBy { it.chapterSlug } } }
 
     var comicDetail by remember { mutableStateOf<Comic?>(null) }
     var chapters by remember { mutableStateOf<List<Chapter>>(emptyList()) }
@@ -135,26 +145,27 @@ fun ComicDetailSheet(
 
     LaunchedEffect(comicId, sourceId) { loadData() }
 
+    fun bookmarkEntity(detail: Comic) = BookmarkEntity(comicSlug = comicId, source = source.id, title = detail.title, thumbnail = detail.cover, createdAt = System.currentTimeMillis())
+
     fun toggleBookmark() {
         val detail = comicDetail ?: return
+        val wasBookmarked = isBookmarked
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         scope.launch {
             withContext(Dispatchers.IO) {
-                if (isBookmarked) {
-                    db.bookmarkDao().delete(comicId, source.id)
-                } else {
-                    db.bookmarkDao().upsert(
-                        BookmarkEntity(
-                            comicSlug = comicId,
-                            source = source.id,
-                            title = detail.title,
-                            thumbnail = detail.cover,
-                            createdAt = System.currentTimeMillis(),
-                        ),
-                    )
+                if (wasBookmarked) db.bookmarkDao().delete(comicId, source.id) else db.bookmarkDao().upsert(bookmarkEntity(detail))
+            }
+            isBookmarked = !wasBookmarked
+            DbChangeNotifier.onDbChanged(context)
+            if (wasBookmarked) {
+                AppToast.action(bookmarkRemovedFormat.format(detail.title), undoText) {
+                    scope.launch {
+                        withContext(Dispatchers.IO) { db.bookmarkDao().upsert(bookmarkEntity(detail)) }
+                        isBookmarked = true
+                        DbChangeNotifier.onDbChanged(context)
+                    }
                 }
             }
-            isBookmarked = !isBookmarked
-            DbChangeNotifier.onDbChanged(context)
         }
     }
 
@@ -175,11 +186,11 @@ fun ComicDetailSheet(
             slug !in readChapters
         }
     }
-    val downloadedChapterCount = remember(downloads) {
-        downloads.count { it.status == ChapterDownloadManager.STATUS_COMPLETED }
+    val downloadedChapterCount = remember(visibleDownloads) {
+        visibleDownloads.count { it.status == ChapterDownloadManager.STATUS_COMPLETED }
     }
-    val totalStorageBytes = remember(downloads) {
-        downloads.filter { it.status == ChapterDownloadManager.STATUS_COMPLETED }.sumOf { it.sizeBytes }
+    val totalStorageBytes = remember(visibleDownloads) {
+        visibleDownloads.filter { it.status == ChapterDownloadManager.STATUS_COMPLETED }.sumOf { it.sizeBytes }
     }
 
     val displayedChapters = remember(chapters, sortAscending, readChapters, chapterQuery, activeFilter, downloadMap) {
@@ -397,8 +408,11 @@ fun ComicDetailSheet(
                                         onDownloadClick = {
                                             when (dl?.status) {
                                                 ChapterDownloadManager.STATUS_COMPLETED -> {
-                                                    ChapterDownloadManager.deleteDownload(context, comicId, source.id, slug)
-                                                    if ((dl?.sizeBytes ?: 0L) > 0L) AppToast.success(freedDownloadFormat.format(Formatter.formatFileSize(context, dl?.sizeBytes ?: 0L))) else AppToast.show(deleteDownloadText)
+                                                    val key = downloadDeleteKey(source.id, comicId, slug)
+                                                    DelayedDelete.schedule(key) { ChapterDownloadManager.deleteDownload(context, comicId, source.id, slug) }
+                                                    val size = dl?.sizeBytes ?: 0L
+                                                    val message = if (size > 0L) chapterDeletedFreedFormat.format(ch.title, Formatter.formatFileSize(context, size)) else chapterDeletedFormat.format(ch.title)
+                                                    AppToast.action(message, undoText) { DelayedDelete.cancel(key) }
                                                 }
 
                                                 ChapterDownloadManager.STATUS_QUEUED, ChapterDownloadManager.STATUS_DOWNLOADING -> {
@@ -597,97 +611,31 @@ fun ComicDetailSheet(
 
     // Long press dialog: "Tandai chapter sebelumnya sudah dibaca"
     showMarkPreviousDialog?.let { targetChapter ->
-        AlertDialog(
-            onDismissRequest = { showMarkPreviousDialog = null },
-            title = {
-                Text(
-                    text = stringResource(R.string.detail_mark_previous_read),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary,
-                )
-            },
-            text = {
-                Text(
-                    text = "Tandai semua chapter sebelum ${targetChapter.title} sebagai sudah dibaca?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val targetIdx = chapters.indexOfFirst { it.id == targetChapter.id }
-                        if (targetIdx >= 0) {
-                            val earlierChapters = chapters.subList(targetIdx, chapters.size)
-                            val slugsToMark = earlierChapters.map {
-                                chapterSlugOf(it.id)
-                            }
-                            scope.launch {
-                                markChaptersRead(context, comicId, slugsToMark, source.id)
-                            }
-                        }
-                        showMarkPreviousDialog = null
-                    },
-                ) {
-                    Text(
-                        text = stringResource(R.string.detail_mark_read_selected),
-                        color = PrimaryPink,
-                    )
+        MarkPreviousReadDialog(
+            chapterTitle = targetChapter.title,
+            onDismiss = { showMarkPreviousDialog = null },
+            onConfirm = {
+                val targetIdx = chapters.indexOfFirst { it.id == targetChapter.id }
+                if (targetIdx >= 0) {
+                    val slugsToMark = chapters.subList(targetIdx, chapters.size).map { chapterSlugOf(it.id) }
+                    scope.launch { markChaptersRead(context, comicId, slugsToMark, source.id) }
                 }
+                showMarkPreviousDialog = null
             },
-            dismissButton = {
-                TextButton(onClick = { showMarkPreviousDialog = null }) {
-                    Text(
-                        text = stringResource(R.string.detail_cancel),
-                        color = TextSecondary,
-                    )
-                }
-            },
-            containerColor = DarkSurfaceElevated,
         )
     }
 
-    // Dialog: Delete all downloads for this comic
+    // Dialog: Delete all downloads for this comic (dengan hitungan chapter + ukuran)
     if (showDeleteDownloadsDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDownloadsDialog = false },
-            title = {
-                Text(
-                    text = stringResource(R.string.detail_delete_all_downloads),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary,
-                )
+        DetailDeleteAllDialog(
+            chapterCount = downloadedChapterCount,
+            sizeText = Formatter.formatFileSize(context, totalStorageBytes),
+            onDismiss = { showDeleteDownloadsDialog = false },
+            onConfirm = {
+                ChapterDownloadManager.deleteComicDownloads(context, comicId, source.id)
+                if (totalStorageBytes > 0L) AppToast.success(freedDownloadFormat.format(Formatter.formatFileSize(context, totalStorageBytes))) else AppToast.show(deletedAllDownloadsText)
+                showDeleteDownloadsDialog = false
             },
-            text = {
-                Text(
-                    text = stringResource(R.string.detail_delete_all_downloads_confirm),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        ChapterDownloadManager.deleteComicDownloads(context, comicId, source.id)
-                        if (totalStorageBytes > 0L) AppToast.success(freedDownloadFormat.format(Formatter.formatFileSize(context, totalStorageBytes))) else AppToast.show(deletedAllDownloadsText)
-                        showDeleteDownloadsDialog = false
-                    },
-                ) {
-                    Text(
-                        text = stringResource(R.string.detail_confirm),
-                        color = PrimaryPink,
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDownloadsDialog = false }) {
-                    Text(
-                        text = stringResource(R.string.detail_cancel),
-                        color = TextSecondary,
-                    )
-                }
-            },
-            containerColor = DarkSurfaceElevated,
         )
     }
 }
