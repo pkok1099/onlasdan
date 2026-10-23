@@ -67,6 +67,7 @@ import com.onlasdan.comic.ui.util.DatabaseBackupStore
 import com.onlasdan.comic.ui.util.MotionTokens
 import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.animateNoirFloatAsState
+import com.onlasdan.comic.ui.util.chapterSlugOf
 import com.onlasdan.comic.ui.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -577,7 +578,12 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
                                             chapterSlug = chapterSlug,
                                             onBack = { navController.popBackStack() },
                                             onNavigateChapter = { nextSlug ->
-                                                navController.navigate("read/$sourceId/$slug/$nextSlug") {
+                                                // Kontrak rute: slug bab TELANJANG. Chapter.id bersifat
+                                                // komposit (comicId:chSlug) — produser yang meneruskan
+                                                // id utuh (pernah terjadi di tombol dock) meracuni
+                                                // argumen rute dan fetch pages() di semua source.
+                                                val cleanSlug = chapterSlugOf(nextSlug)
+                                                navController.navigate("read/$sourceId/$slug/$cleanSlug") {
                                                     popUpTo("read/$sourceId/$slug/$chapterSlug") { inclusive = true }
                                                 }
                                             },

@@ -37,6 +37,7 @@ import androidx.compose.ui.zIndex
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.NoirAnimatedVisibility
+import com.onlasdan.comic.ui.util.chapterSlugOf
 import com.onlasdan.comic.ui.util.extractSlug
 import kotlin.math.roundToInt
 
@@ -375,7 +376,7 @@ fun ReaderBottomDock(
                     onClick = {
                         if (hasPrev) {
                             val target = chapters[idx + 1]
-                            actions.onNavigateChapter(target.id ?: extractSlug(target.url))
+                            actions.onNavigateChapter(chapterSlugOf(target.id ?: extractSlug(target.url)))
                         }
                     },
                     activeTooltip = activeTooltip,
@@ -452,7 +453,7 @@ fun ReaderBottomDock(
                     onClick = {
                         if (hasNext) {
                             val target = chapters[idx - 1]
-                            actions.onNavigateChapter(target.id ?: extractSlug(target.url))
+                            actions.onNavigateChapter(chapterSlugOf(target.id ?: extractSlug(target.url)))
                         }
                     },
                     activeTooltip = activeTooltip,
