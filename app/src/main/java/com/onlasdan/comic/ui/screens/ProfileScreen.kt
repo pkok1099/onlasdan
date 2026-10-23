@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -107,7 +108,6 @@ fun ProfileScreen(
     var historyMenuOpen by remember { mutableStateOf(false) }
     var showClearHistoryDialog by remember { mutableStateOf(false) }
     val view = LocalView.current
-    val clearHistoryConfirmFormat = stringResource(R.string.profile_clear_history_confirm)
     val historyClearedText = stringResource(R.string.profile_history_cleared)
     val historyRemovedFormat = stringResource(R.string.profile_history_removed)
     val undoText = stringResource(R.string.common_undo)
@@ -309,7 +309,7 @@ fun ProfileScreen(
         AlertDialog(
             onDismissRequest = { showClearHistoryDialog = false },
             title = { Text(stringResource(R.string.profile_clear_history)) },
-            text = { Text(clearHistoryConfirmFormat.format(history.size)) },
+            text = { Text(pluralStringResource(R.plurals.profile_clear_history_confirm, history.size, history.size)) },
             confirmButton = {
                 TextButton(
                     onClick = {

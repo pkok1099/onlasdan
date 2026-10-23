@@ -152,21 +152,21 @@
     <string name="downloads_delete_chapter">Hapus unduhan chapter</string>
     <string name="downloads_deleted_freed">%1$s berhasil dihapus</string>
     <string name="downloads_deleted">Unduhan dihapus</string>
-    <string name="downloads_chapter_deleted">Bab \"%1$s\" dihapus dari unduhan</string>
-    <string name="downloads_chapter_deleted_freed">Bab \"%1$s\" dihapus · %2$s dibebaskan</string>
+    <string name="downloads_chapter_deleted">Bab &#8220;%1$s&#8221; dihapus dari unduhan</string>
+    <string name="downloads_chapter_deleted_freed">Bab &#8220;%1$s&#8221; dihapus · %2$s dibebaskan</string>
     <string name="common_undo">Urungkan</string>
     <string name="downloads_parallel_title">Unduhan serentak</string>
     <string name="downloads_parallel_desc">Beberapa chapter diunduh bersamaan; nonaktif = satu per satu berurutan</string>
     <string name="downloads_delete_all">Hapus semua unduhan komik ini</string>
-    <string name="downloads_delete_all_confirm">Hapus %2$d chapter terunduh dari %1$s? Sekitar %3$s akan dibebaskan. Tindakan ini tidak bisa dibatalkan.</string>
+    <plurals name="downloads_delete_all_confirm"><item quantity="one">Hapus %2$d chapter terunduh dari %1$s? Sekitar %3$s akan dibebaskan. Tindakan ini tidak bisa dibatalkan.</item><item quantity="other">Hapus %2$d chapter terunduh dari %1$s? Sekitar %3$s akan dibebaskan. Tindakan ini tidak bisa dibatalkan.</item></plurals>
     <string name="profile_sort_newest">Sort: Newest</string>
     <string name="profile_sort_oldest">Sort: Oldest</string>
     <string name="profile_sort_title">Sort: Title</string>
     <string name="profile_clear_history">Bersihkan riwayat</string>
-    <string name="profile_clear_history_confirm">Hapus %1$d riwayat baca? Tindakan ini tidak bisa dibatalkan.</string>
+    <plurals name="profile_clear_history_confirm"><item quantity="one">Hapus %1$d riwayat baca? Tindakan ini tidak bisa dibatalkan.</item><item quantity="other">Hapus %1$d riwayat baca? Tindakan ini tidak bisa dibatalkan.</item></plurals>
     <string name="profile_history_cleared">Riwayat baca dibersihkan</string>
-    <string name="profile_history_removed">Riwayat \"%1$s\" dihapus</string>
-    <string name="detail_bookmark_removed">Bookmark \"%1$s\" dihapus</string>
+    <string name="profile_history_removed">Riwayat &#8220;%1$s&#8221; dihapus</string>
+    <string name="detail_bookmark_removed">Bookmark &#8220;%1$s&#8221; dihapus</string>
     <string name="profile_storage_label">Penyimpanan: %1$s</string>
     <string name="profile_empty_bookmarks">Belum ada bookmark.</string>
     <string name="profile_empty_history">Belum ada history.</string>
@@ -319,7 +319,7 @@
     <string name="download_cancelled_text">Unduhan dibatalkan: %1$s</string>
     <string name="detail_storage_used">%1$s terunduh untuk komik ini</string>
     <string name="detail_delete_all_downloads">Hapus Semua Unduhan</string>
-    <string name="detail_delete_all_downloads_confirm">Hapus %1$d chapter terunduh (%2$s) untuk komik ini? Tindakan ini tidak bisa dibatalkan.</string>
+    <plurals name="detail_delete_all_downloads_confirm"><item quantity="one">Hapus %1$d chapter terunduh (%2$s) untuk komik ini? Tindakan ini tidak bisa dibatalkan.</item><item quantity="other">Hapus %1$d chapter terunduh (%2$s) untuk komik ini? Tindakan ini tidak bisa dibatalkan.</item></plurals>
     <string name="detail_deleted_all_downloads">Semua unduhan komik berhasil dihapus</string>
     <string name="detail_confirm">Hapus</string>
     <string name="detail_cancel">Batal</string>

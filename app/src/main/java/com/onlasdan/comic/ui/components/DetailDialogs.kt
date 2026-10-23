@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.theme.DarkSurfaceElevated
@@ -31,7 +32,7 @@ fun DetailDeleteAllDialog(chapterCount: Int, sizeText: String, onDismiss: () -> 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = stringResource(R.string.detail_delete_all_downloads), style = MaterialTheme.typography.titleMedium, color = TextPrimary) },
-        text = { Text(text = stringResource(R.string.detail_delete_all_downloads_confirm, chapterCount, sizeText), style = MaterialTheme.typography.bodyMedium, color = TextSecondary) },
+        text = { Text(text = pluralStringResource(R.plurals.detail_delete_all_downloads_confirm, chapterCount, chapterCount, sizeText), style = MaterialTheme.typography.bodyMedium, color = TextSecondary) },
         confirmButton = { TextButton(onClick = onConfirm) { Text(text = stringResource(R.string.detail_confirm), color = PrimaryPink) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(text = stringResource(R.string.detail_cancel), color = TextSecondary) } },
         containerColor = DarkSurfaceElevated,

@@ -366,7 +366,7 @@ private fun DeleteAllDownloadsDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.downloads_delete_all)) },
-        text = { Text(stringResource(R.string.downloads_delete_all_confirm, chapters.first().comicTitle, chapters.size, Formatter.formatFileSize(context, totalBytes))) },
+        text = { Text(pluralStringResource(R.plurals.downloads_delete_all_confirm, chapters.size, chapters.first().comicTitle, chapters.size, Formatter.formatFileSize(context, totalBytes))) },
         confirmButton = {
             TextButton(
                 onClick = {
