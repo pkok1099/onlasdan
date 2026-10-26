@@ -186,8 +186,8 @@ private fun SelectableChip(label: String, selected: Boolean, onClick: () -> Unit
     LaunchedEffect(punch) {
         if (punch > 0) {
             withContext(NoirForceMotionScale) {
-                punchScale.animateTo(0.88f, NoirMotion.noirSpatialFast())
-                punchScale.animateTo(1f, NoirMotion.noirSpatialFast())
+                punchScale.animateTo(0.88f, NoirMotion.SpatialFast.asFloat)
+                punchScale.animateTo(1f, NoirMotion.SpatialFast.asFloat)
             }
         }
     }

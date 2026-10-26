@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -38,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.onlasdan.comic.ui.theme.BlushTint
 import com.onlasdan.comic.ui.theme.CardShape
 import com.onlasdan.comic.ui.theme.PrimaryPink
-import com.onlasdan.comic.ui.theme.ShimmerBase
+import com.onlasdan.comic.ui.theme.SkeletonHalftoneShaderBrush
 import com.onlasdan.comic.ui.theme.Spacing
 import com.onlasdan.comic.ui.util.NoirForceMotionScale
 import com.onlasdan.comic.ui.util.NoirMotion
@@ -46,120 +47,162 @@ import com.onlasdan.comic.ui.util.animateNoirFloatAsState
 import com.onlasdan.comic.ui.util.rememberReducedMotion
 import kotlinx.coroutines.withContext
 
-/** Highlight kilau: Blush sangat tipis di atas dasar shimmer theme. */
-private val SkeletonHighlight = BlushTint.copy(alpha = 0.07f)
+/** Warna dasar skeleton: permukaan gelap terdefinisi di atas PureBlack. */
+private val SkeletonBase = Color(0xFF16161F)
 
-/** Border super halus agar tidak terlihat seperti kotak mati. */
-private val SkeletonBorder = Color.White.copy(alpha = 0.04f)
+/** Highlight kilau: pita shimmer lembut dengan sentuhan Blush di tengah. */
+private val SkeletonHighlightEdge = Color(0xFF222230)
+private val SkeletonHighlightPeak = Color(0xFF2E2A3A)
+
+/** Border super halus agar siluet placeholder bersih tanpa outline tebal yang berisik. */
+private val SkeletonBorder = Color.White.copy(alpha = 0.07f)
 
 /**
  * Driver shimmer bersama (keputusan rombak 2026-10-21): satu Animatable untuk
  * seluruh skeleton di dalam satu [ShimmerScope], supaya kilau bergerak sebagai
  * satu permukaan (common fate), bukan berdenyut per-blok.
+ * Jika sudah berada di dalam [ShimmerScope] induk, langsung gunakan driver induk.
  */
 val LocalShimmerTranslate = compositionLocalOf<Animatable<Float, AnimationVector1D>?> { null }
 
 @Composable
 fun ShimmerScope(content: @Composable () -> Unit) {
+    val existing = LocalShimmerTranslate.current
     val reducedMotion = rememberReducedMotion()
-    val shimmerSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.shimmerSpring()
-    val translateAnim = remember { Animatable(0f) }
-    LaunchedEffect(shimmerSpec) {
-        withContext(NoirForceMotionScale) {
-            while (true) {
-                translateAnim.animateTo(1400f, shimmerSpec)
-                translateAnim.snapTo(0f)
-            }
-        }
-    }
-    CompositionLocalProvider(LocalShimmerTranslate provides translateAnim) {
-        content()
-    }
-}
-
-/**
- * Kotak shimmer dasar dengan visual Noir & Blush.
- * Di dalam [ShimmerScope] memakai driver bersama; di luarnya menggerakkan
- * dirinya sendiri (fallback). Animasi spring (bypass 0x).
- */
-@Composable
-fun ShimmerBox(modifier: Modifier = Modifier, shape: Shape = CardShape) {
-    val sharedAnim = LocalShimmerTranslate.current
-    val ownAnim = remember { Animatable(0f) }
-    val reducedMotion = rememberReducedMotion()
-    val shimmerSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.shimmerSpring()
-    LaunchedEffect(shimmerSpec, sharedAnim) {
-        if (sharedAnim == null) {
+    val shimmerSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.Ambient.Shimmer
+    val translateAnim = remember { Animatable(-600f) }
+    LaunchedEffect(shimmerSpec, existing == null) {
+        if (existing == null) {
             withContext(NoirForceMotionScale) {
                 while (true) {
-                    ownAnim.animateTo(1400f, shimmerSpec)
-                    ownAnim.snapTo(0f)
+                    translateAnim.snapTo(-600f)
+                    translateAnim.animateTo(1800f, shimmerSpec)
                 }
             }
         }
     }
-
-    val translate = sharedAnim?.value ?: ownAnim.value
-    val brush = Brush.linearGradient(
-        colors = listOf(ShimmerBase, SkeletonHighlight, ShimmerBase),
-        start = Offset(translate - 450f, translate - 450f),
-        end = Offset(translate, translate),
-    )
-
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(brush)
-            .border(1.dp, SkeletonBorder, shape),
-    )
-}
-
-/**
- * Skeleton kartu komik: poster 2:3 + 2 bar teks judul.
- */
-@Composable
-fun CardPlaceholder(modifier: Modifier = Modifier, width: Dp = 130.dp) {
-    Column(
-        modifier = modifier.width(width),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        ShimmerBox(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(2f / 3f),
-            shape = CardShape,
-        )
-        ShimmerBox(
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(14.dp),
-            shape = RoundedCornerShape(4.dp),
-        )
-        ShimmerBox(
-            modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .height(12.dp),
-            shape = RoundedCornerShape(4.dp),
-        )
+    CompositionLocalProvider(LocalShimmerTranslate provides (existing ?: translateAnim)) {
+        content()
     }
 }
 
 @Composable
-fun PlaceholderRow(modifier: Modifier = Modifier, itemCount: Int = 4, cardWidth: Dp = 130.dp) = ShimmerScope { PlaceholderRowContent(modifier, itemCount, cardWidth) }
+private fun rememberShimmerTranslate(shared: Animatable<Float, AnimationVector1D>?): Float {
+    if (shared != null) return shared.value
+    val ownAnim = remember { Animatable(-600f) }
+    val reducedMotion = rememberReducedMotion()
+    val shimmerSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.Ambient.Shimmer
+    LaunchedEffect(shimmerSpec) {
+        withContext(NoirForceMotionScale) {
+            while (true) {
+                ownAnim.snapTo(-600f)
+                ownAnim.animateTo(1800f, shimmerSpec)
+            }
+        }
+    }
+    return ownAnim.value
+}
 
+/**
+ * Kotak shimmer dasar dengan visual Noir & Blush serta tekstur screentone tipis.
+ */
 @Composable
-private fun PlaceholderRowContent(modifier: Modifier = Modifier, itemCount: Int = 4, cardWidth: Dp = 130.dp) {
+fun ShimmerBox(modifier: Modifier = Modifier, shape: Shape = CardShape) {
+    val translate = rememberShimmerTranslate(LocalShimmerTranslate.current)
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(
+            SkeletonBase,
+            SkeletonHighlightEdge,
+            SkeletonHighlightPeak,
+            SkeletonHighlightEdge,
+            SkeletonBase,
+        ),
+        start = Offset(translate - 520f, translate - 520f),
+        end = Offset(translate, translate),
+    )
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(shimmerBrush)
+            .drawWithContent {
+                drawContent()
+                drawRect(SkeletonHalftoneShaderBrush)
+            }
+            .border(0.75.dp, SkeletonBorder, shape),
+    )
+}
+
+/**
+ * Skeleton kartu komik: poster (default 2:3) + opsional 2 bar teks judul.
+ */
+@Composable
+fun CardPlaceholder(
+    modifier: Modifier = Modifier,
+    width: Dp = 130.dp,
+    posterRatio: Float = 2f / 3f,
+    posterShape: Shape = CardShape,
+    showTextLines: Boolean = true,
+) {
+    val sizeMod = if (width != Dp.Unspecified) modifier.width(width) else modifier
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        modifier = sizeMod,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         ShimmerBox(
             modifier = Modifier
-                .padding(horizontal = Spacing.lg)
-                .width(160.dp)
-                .height(20.dp),
-            shape = RoundedCornerShape(4.dp),
+                .fillMaxWidth()
+                .aspectRatio(posterRatio),
+            shape = posterShape,
         )
+        if (showTextLines) {
+            Spacer(modifier = Modifier.height(Spacing.xxs))
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth(0.88f)
+                    .height(13.dp),
+                shape = RoundedCornerShape(4.dp),
+            )
+            ShimmerBox(
+                modifier = Modifier
+                    .fillMaxWidth(0.55f)
+                    .height(11.dp),
+                shape = RoundedCornerShape(4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Header section placeholder: aksen bar vertikal + judul + opsional aksi "Lihat Semua" —
+ * meniru [SectionHeader] asli.
+ */
+@Composable
+fun SectionTitlePlaceholder(
+    modifier: Modifier = Modifier,
+    showAction: Boolean = false,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.xs),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            ShimmerBox(modifier = Modifier.size(width = 4.dp, height = 18.dp), shape = RoundedCornerShape(2.dp))
+            ShimmerBox(modifier = Modifier.size(width = 136.dp, height = 18.dp), shape = RoundedCornerShape(4.dp))
+        }
+        if (showAction) {
+            ShimmerBox(modifier = Modifier.size(width = 68.dp, height = 14.dp), shape = RoundedCornerShape(4.dp))
+        }
+    }
+}
+
+@Composable
+fun PlaceholderRow(modifier: Modifier = Modifier, itemCount: Int = 4, cardWidth: Dp = 130.dp) = ShimmerScope {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
+        SectionTitlePlaceholder(showAction = true)
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = Spacing.lg),
@@ -183,55 +226,57 @@ fun ChapterRowPlaceholder(modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             ShimmerBox(
                 modifier = Modifier
-                    .width(140.dp)
-                    .height(16.dp),
+                    .width(148.dp)
+                    .height(15.dp),
                 shape = RoundedCornerShape(4.dp),
             )
             ShimmerBox(
                 modifier = Modifier
-                    .width(80.dp)
-                    .height(12.dp),
+                    .width(84.dp)
+                    .height(11.dp),
                 shape = RoundedCornerShape(4.dp),
             )
         }
         ShimmerBox(
-            modifier = Modifier
-                .width(20.dp)
-                .height(20.dp),
-            shape = RoundedCornerShape(4.dp),
+            modifier = Modifier.size(24.dp),
+            shape = CircleShape,
         )
     }
 }
 
 /**
- * Grid katalog (HANYA untuk Home/Browse/Search).
- * 3 kolom, rasio poster 2:3, + 2 bar teks di bawah tiap kotak.
+ * Grid katalog (untuk Home/Browse/Search/Genre/Updates/Projects).
+ * Mendukung jumlah kolom dinamis (default 3), rasio poster 2:3, + 2 bar teks di bawah tiap kotak.
  */
 @Composable
-fun PlaceholderGrid(modifier: Modifier = Modifier, columns: Int = 3, rows: Int = 4) = ShimmerScope { PlaceholderGridContent(modifier, columns, rows) }
+fun PlaceholderGrid(
+    modifier: Modifier = Modifier,
+    columns: Int = 3,
+    rows: Int = 3,
+    showHeader: Boolean = false,
+) = ShimmerScope { PlaceholderGridContent(modifier, columns, rows, showHeader) }
 
 @Composable
-private fun PlaceholderGridContent(modifier: Modifier = Modifier, columns: Int = 3, rows: Int = 4) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
-    ) {
-        repeat(rows) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-            ) {
-                repeat(columns) {
-                    CardPlaceholder(
-                        modifier = Modifier.weight(1f),
-                        width = Dp.Unspecified,
-                    )
+private fun PlaceholderGridContent(
+    modifier: Modifier = Modifier,
+    columns: Int = 3,
+    rows: Int = 3,
+    showHeader: Boolean = false,
+) {
+    val safeColumns = columns.coerceAtLeast(2)
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        if (showHeader) SectionTitlePlaceholder(showAction = true)
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            repeat(rows) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    repeat(safeColumns) {
+                        CardPlaceholder(modifier = Modifier.weight(1f), width = Dp.Unspecified)
+                    }
                 }
             }
         }
@@ -241,7 +286,6 @@ private fun PlaceholderGridContent(modifier: Modifier = Modifier, columns: Int =
 /**
  * Skeleton halaman baca (Reader): strip vertikal full-width,
  * mencerminkan halaman komik memanjang. TANPA grid card.
- * Indikator minimalis di tengah, tidak menutupi TopBar.
  */
 @Composable
 fun ReaderCanvasPlaceholder(modifier: Modifier = Modifier, stripCount: Int = 3) = ShimmerScope { ReaderCanvasPlaceholderContent(modifier, stripCount) }
@@ -250,7 +294,7 @@ fun ReaderCanvasPlaceholder(modifier: Modifier = Modifier, stripCount: Int = 3) 
 private fun ReaderCanvasPlaceholderContent(modifier: Modifier = Modifier, stripCount: Int = 3) {
     Column(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
         repeat(stripCount) { index ->
             Box(
@@ -263,7 +307,6 @@ private fun ReaderCanvasPlaceholderContent(modifier: Modifier = Modifier, stripC
                     modifier = Modifier.fillMaxSize(),
                     shape = RoundedCornerShape(0.dp),
                 )
-                // Indikator minimalis di tengah strip pertama saja.
                 if (index == 0) {
                     ReaderLoadingIndicator()
                 }
@@ -272,18 +315,10 @@ private fun ReaderCanvasPlaceholderContent(modifier: Modifier = Modifier, stripC
     }
 }
 
-/**
- * Indikator loading minimalis Noir & Blush: dot berdenyut
- * dengan spring (bypass 0x), tanpa tween/ms.
- */
 @Composable
 private fun ReaderLoadingIndicator() {
     val reducedMotion = rememberReducedMotion()
-    val pulseSpec = if (reducedMotion) {
-        NoirMotion.stiffSpring()
-    } else {
-        NoirMotion.shimmerSpring()
-    }
+    val pulseSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.Ambient.Shimmer
     val pulse = remember { Animatable(0.4f) }
     LaunchedEffect(pulseSpec) {
         withContext(NoirForceMotionScale) {
@@ -295,7 +330,7 @@ private fun ReaderLoadingIndicator() {
     }
     val alpha by animateNoirFloatAsState(
         targetValue = pulse.value,
-        animationSpec = NoirMotion.effectsSpring(),
+        animationSpec = NoirMotion.Effects.Float,
         label = "readerPulse",
     )
     Box(
@@ -312,274 +347,5 @@ private fun ReaderLoadingIndicator() {
                 .clip(CircleShape)
                 .background(PrimaryPink.copy(alpha = 0.6f * alpha)),
         )
-    }
-}
-
-/** Garis judul section — elemen placeholder untuk header section. */
-@Composable
-fun SectionTitlePlaceholder(modifier: Modifier = Modifier) {
-    ShimmerBox(
-        modifier = modifier
-            .padding(horizontal = Spacing.lg)
-            .width(120.dp)
-            .height(16.dp),
-        shape = RoundedCornerShape(Spacing.xs),
-    )
-}
-
-/** Satu baris daftar horizontal (thumbnail potret + dua garis teks), opsional nomor peringkat. */
-@Composable
-fun ListRowPlaceholder(modifier: Modifier = Modifier, rank: Boolean = false) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = Spacing.lg),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (rank) {
-            ShimmerBox(
-                modifier = Modifier.size(28.dp),
-                shape = RoundedCornerShape(Spacing.xs),
-            )
-        }
-        ShimmerBox(
-            modifier = Modifier.size(width = 56.dp, height = 76.dp),
-            shape = CardShape,
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            ShimmerBox(
-                modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .height(14.dp),
-                shape = RoundedCornerShape(Spacing.xs),
-            )
-            ShimmerBox(
-                modifier = Modifier
-                    .fillMaxWidth(0.35f)
-                    .height(14.dp),
-                shape = RoundedCornerShape(Spacing.xs),
-            )
-        }
-    }
-}
-
-/** Blok section berperingkat (Komikindo): judul + baris bernomor. */
-@Composable
-fun RankedPlaceholder(modifier: Modifier = Modifier, rows: Int = 4) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        SectionTitlePlaceholder()
-        repeat(rows) { ListRowPlaceholder(rank = true) }
-    }
-}
-
-/** Chip filter (gaya chip section Shinigami: tinggi ~26dp, radius 8dp). */
-@Composable
-fun ChipPlaceholder(modifier: Modifier = Modifier, width: Dp = 64.dp) {
-    ShimmerBox(
-        modifier = modifier
-            .width(width)
-            .height(26.dp),
-        shape = RoundedCornerShape(8.dp),
-    )
-}
-
-/**
- * Blok hero Shinigami: slide rasio 4:3.4 + baris dots — meniru
- * ShinigamiHeroCarousel (bukan slab generik).
- */
-@Composable
-fun ShinigamiHeroPlaceholder(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = Spacing.xs),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        ShimmerBox(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg)
-                .aspectRatio(4f / 3.4f),
-            shape = RoundedCornerShape(14.dp),
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            ShimmerBox(
-                modifier = Modifier
-                    .width(18.dp)
-                    .height(6.dp),
-                shape = CircleShape,
-            )
-            repeat(4) {
-                ShimmerBox(
-                    modifier = Modifier
-                        .padding(start = 6.dp)
-                        .size(6.dp),
-                    shape = CircleShape,
-                )
-            }
-        }
-    }
-}
-
-/**
- * Blok update Shinigami: header (judul + lihat-semua) + baris kontrol
- * (chip Project/Mirror + toggle grid/list) + grid kartu 3 kolom + pagination
- * bernomor — meniru ShinigamiUpdateSection.
- */
-@Composable
-fun ShinigamiUpdatePlaceholder(modifier: Modifier = Modifier, rows: Int = 2) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ShimmerBox(
-                modifier = Modifier
-                    .width(80.dp)
-                    .height(16.dp),
-                shape = RoundedCornerShape(Spacing.xs),
-            )
-            ShimmerBox(
-                modifier = Modifier
-                    .width(64.dp)
-                    .height(14.dp),
-                shape = RoundedCornerShape(Spacing.xs),
-            )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                ChipPlaceholder(width = 72.dp)
-                ChipPlaceholder(width = 64.dp)
-            }
-            ShimmerBox(
-                modifier = Modifier
-                    .width(60.dp)
-                    .height(32.dp),
-                shape = RoundedCornerShape(8.dp),
-            )
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md),
-        ) {
-            repeat(rows) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                ) {
-                    repeat(3) {
-                        CardPlaceholder(
-                            modifier = Modifier.weight(1f),
-                            width = Dp.Unspecified,
-                        )
-                    }
-                }
-            }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            repeat(5) { i ->
-                ShimmerBox(
-                    modifier = Modifier
-                        .padding(start = if (i == 0) 0.dp else Spacing.xs)
-                        .size(width = 28.dp, height = 32.dp),
-                    shape = RoundedCornerShape(8.dp),
-                )
-            }
-        }
-    }
-}
-
-/**
- * Blok rekomendasi Shinigami: judul + chip format (Manhwa/Manga/Manhua) +
- * baris horizontal kartu 140dp — meniru ShinigamiRecommendationsSection.
- */
-@Composable
-fun RecommendationsPlaceholder(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-        SectionTitlePlaceholder()
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
-        ) {
-            ChipPlaceholder(width = 72.dp)
-            ChipPlaceholder(width = 64.dp)
-            ChipPlaceholder(width = 68.dp)
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-        ) {
-            repeat(3) {
-                CardPlaceholder(width = 140.dp)
-            }
-        }
-    }
-}
-
-/** Blok grid DoujinDesu: bar banner + grid kartu 3 kolom. */
-@Composable
-fun BannerGridPlaceholder(modifier: Modifier = Modifier, rows: Int = 2) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md),
-    ) {
-        ShimmerBox(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg)
-                .height(44.dp),
-            shape = CardShape,
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md),
-        ) {
-            repeat(rows) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-                ) {
-                    repeat(3) {
-                        CardPlaceholder(
-                            modifier = Modifier.weight(1f),
-                            width = Dp.Unspecified,
-                        )
-                    }
-                }
-            }
-        }
     }
 }

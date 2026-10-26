@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.onlasdan.comic.R
+import com.onlasdan.comic.ui.theme.ComicVibrantColors
 import com.onlasdan.comic.ui.theme.DarkSurfaceElevated
 import com.onlasdan.comic.ui.theme.ErrorRed
 import com.onlasdan.comic.ui.theme.PrimaryPink
@@ -70,7 +71,7 @@ private fun ConfirmButton(label: String, destructive: Boolean, isLoading: Boolea
         onClick = onClick,
         enabled = !isLoading,
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (destructive) ErrorRed else PrimaryPink,
+            containerColor = if (destructive) ComicVibrantColors.ManhuaCrimson else ComicVibrantColors.ComicPink,
             contentColor = Color.White,
         ),
     ) {

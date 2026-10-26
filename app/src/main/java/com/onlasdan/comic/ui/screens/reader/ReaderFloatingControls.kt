@@ -1,7 +1,6 @@
 package com.onlasdan.comic.ui.screens.reader
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +21,7 @@ import androidx.compose.ui.zIndex
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.NoirAnimatedVisibility
+import com.onlasdan.comic.ui.util.noirClickable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -233,7 +233,7 @@ fun BoxScope.AutoNextCountdownBanner(
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = PrimaryPink,
                 modifier = Modifier
-                    .clickable {
+                    .noirClickable(pressedScale = 0.92f) {
                         countdownRemainingMs = 0L
                         autoNextTriggered = true
                         onNavigateNext(nextChapterSlug)

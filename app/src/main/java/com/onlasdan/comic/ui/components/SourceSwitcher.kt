@@ -1,11 +1,13 @@
 package com.onlasdan.comic.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -13,14 +15,41 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.onlasdan.comic.ui.source.ComicSource
 import com.onlasdan.comic.ui.source.SourceRegistry
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.pressScale
+
+@Composable
+fun ElasticNoirBrandHeader(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(
+            text = "ONLASDAN",
+            fontFamily = InterFontFamily,
+            fontWeight = FontWeight.Black,
+            fontSize = 18.sp,
+            letterSpacing = (-0.5).sp,
+            color = TextPrimary,
+        )
+        Text(
+            text = ".",
+            fontFamily = InterFontFamily,
+            fontWeight = FontWeight.Black,
+            fontSize = 22.sp,
+            color = ComicSfxPink,
+        )
+    }
+}
 
 @Composable
 fun SourceSwitcherTrigger(
@@ -29,26 +58,28 @@ fun SourceSwitcherTrigger(
     modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-
-    Row(
+    val dotColor = remember(currentSource.id) { ComicVibrantColors.forOrigin(currentSource.id) }
+    Surface(
+        shape = PillShape,
+        color = NoirSurface.copy(alpha = 0.90f),
+        border = BorderStroke(StrokeWidth.regular, dotColor.copy(alpha = 0.45f)),
         modifier = modifier
             .pressScale(interactionSource)
-            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(vertical = Spacing.xs, horizontal = Spacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() },
     ) {
-        Text(
-            text = currentSource.name,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            color = TextPrimary,
-        )
-        Spacer(modifier = Modifier.width(Spacing.xs))
-        Icon(
-            imageVector = Icons.Default.KeyboardArrowDown,
-            contentDescription = "Pilih Sumber",
-            tint = AccentPink,
-            modifier = Modifier.size(18.dp),
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Box(Modifier.size(7.dp).clip(CircleShape).background(dotColor))
+            Text(
+                text = currentSource.name,
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
+                color = TextPrimary,
+            )
+            Icon(Icons.Default.KeyboardArrowDown, "Pilih Sumber", Modifier.size(16.dp), dotColor)
+        }
     }
 }
 

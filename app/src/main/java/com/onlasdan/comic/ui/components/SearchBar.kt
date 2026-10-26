@@ -35,7 +35,16 @@ fun AppSearchBar(
             .height(48.dp),
         shape = CardShape,
         color = DarkSurface,
-        border = BorderStroke(StrokeWidth.regular, DarkOutline),
+        border = BorderStroke(
+            1.dp,
+            androidx.compose.ui.graphics.Brush.horizontalGradient(
+                listOf(
+                    ComicVibrantColors.ComicPink.copy(alpha = 0.5f),
+                    ComicVibrantColors.ManhwaCyan.copy(alpha = 0.35f),
+                    DarkOutline,
+                ),
+            ),
+        ),
     ) {
         Row(
             modifier = Modifier

@@ -27,13 +27,23 @@ di atas tema custom Noir & Blush melalui:
 Jangan gunakan pantulan berlebihan (DampingRatioHighBouncy / 0.5f).
 Pisahkan mutlak antara ruang dan efek visual:
 
-- **Spatial Spring** (posisi, ukuran, scale, bentuk): slightly underdamped
-  spring — `dampingRatio = 0.78f–0.85f`, `stiffness = 800f`.
-  Menghasilkan satu ayunan rem magnetik yang sangat halus di akhir gerakan,
-  tanpa terlihat bergoyang berlebihan.
-- **Effects Spring** (alpha/opacity & warna): wajib
-  `Spring.DampingRatioNoBouncy (1.0f)` dengan `stiffness = 1000f–1200f`
-  agar transisi warna dan transparansi mulus tanpa efek kedip.
+- **Spatial Tokens** (posisi, ukuran, scale, bentuk; varian Float, Dp, IntOffset):
+  - `Spatial` (default): `dampingRatio = 0.80f`, `stiffness = 800f`. Ayunan rem magnetik sangat halus di akhir gerakan.
+  - `SpatialFast`: `dampingRatio = 0.72f`, `stiffness = 900f`. Elemen kecil, tactile recovery, pop icon.
+  - `SpatialMedium`: `dampingRatio = 0.75f`, `stiffness = 550f`. Indikator pill dock, card entrance berbobot.
+  - `SpatialHeavy`: `dampingRatio = 0.82f`, `stiffness = 380f`. Transisi layar, sheet morphing, keyboard IME dock offset.
+- **Effects Tokens** (alpha/opacity & warna; NoBouncy):
+  - `Effects` (default): `dampingRatio = Spring.DampingRatioNoBouncy (1.0f)`, `stiffness = 1000f` (Float & Color) agar transisi warna dan transparansi mulus tanpa flickering.
+  - `Effects.Fast`: `stiffness = 1200f` untuk perubahan efek yang lebih gesit.
+  - `Effects.Dismiss`: `stiffness = 1500f`, `visibilityThreshold = 4f` untuk lembar dismiss yang responsif.
+- **Press Tokens**:
+  - `Press`: `dampingRatio = 0.80f`, `stiffness = 1200f`. Basis fisik respons sentuhan cepat (`springPress()`).
+- **Ambient Tokens**:
+  - `Ambient.Shimmer`: `dampingRatio = 0.80f`, `stiffness = 60f`.
+  - `Ambient.Breathe`: `dampingRatio = 0.80f`, `stiffness = 50f` untuk skeleton slot reader.
+- **Pill Tokens**:
+  - `Pill.Throw` (muncul): dilempar dari bawah dengan momentum (`dampingRatio = 0.72f`, `stiffness = 500f`).
+  - `Pill.Drop` (sembunyi): jatuh ditarik gravitasi (`dampingRatio = 1.0f`, `stiffness = 700f`).
 
 ## 3. Penanganan Developer Options (Animation 0x) & Aksesibilitas
 
@@ -60,8 +70,8 @@ snap instan diganti pegas kaku / crossfade singkat.
 - **Lingkaran Selected di Pill Dock:** Ganti snap if/else dengan animasi
   terpisah — scale (0.8f → 1.0f) pakai Spatial Spring (dampingRatio ~0.8f),
   alpha (0f → 1f) pakai Effects Spring (NoBouncy).
-- **Show/Hide Pill Dock:** Show = "dilempar dari bawah" — spring bouncy
-  (`dampingRatio = 0.65f`, `stiffness = 500f`) dengan sedikit momentum/overshoot.
-  Hide = "jatuh" — drop cepat tanpa pantulan
-  (`dampingRatio = DampingRatioNoBouncy`, `stiffness = 1500f`).
+- **Show/Hide Pill Dock:** Show = "dilempar dari bawah" — `Pill.Throw`
+  (`dampingRatio = 0.72f`, `stiffness = 500f`) dengan sedikit momentum/overshoot.
+  Hide = "jatuh" — `Pill.Drop` drop tanpa pantulan
+  (`dampingRatio = 1.0f`, `stiffness = 700f`).
   Tanpa tween dan tanpa angka milidetik.

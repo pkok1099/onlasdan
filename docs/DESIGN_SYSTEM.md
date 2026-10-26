@@ -35,15 +35,25 @@ Onlasdan menerapkan aturan gerak tanpa kompromi:
 1. **Nol Durasi Tetap (No fixed `tween()` / zero ms)**:
    - Gerakan tidak dipaksa oleh angka waktu milidetik buatan, melainkan mengikuti **fisika pegas (spring physics)** alami.
 2. **Spesifikasi Spring Tokens (`NoirMotion`)**:
-   - **Spatial Spring (Posisi, Ukuran, Scale)**:
-     - `dampingRatio = 0.80f`, `stiffness = 800f`
-     - Menghasilkan gerakan responsif dengan satu rem magnetik halus di akhir tanpa guncangan berlebih.
-   - **Effects Spring (Alpha / Opacity & Warna)**:
-     - `dampingRatio = Spring.DampingRatioNoBouncy (1.0f)`, `stiffness = 1100f`
-     - Menjamin pergantian transparansi dan warna halus tanpa flickering.
-   - **Bouncy Launch (Pill Bottom Dock)**:
-     - `dampingRatio = 0.65f`, `stiffness = 500f` (efek lempar pegas elastis saat dock muncul).
+   - **Spatial Tokens (Posisi, Ukuran, Scale; Float/Dp/IntOffset)**:
+     - `Spatial`: `dampingRatio = 0.80f`, `stiffness = 800f` (rem magnetik halus responsif).
+     - `SpatialFast`: `dampingRatio = 0.72f`, `stiffness = 900f` (elemen kecil, icon scale, tactile recovery).
+     - `SpatialMedium`: `dampingRatio = 0.75f`, `stiffness = 550f` (pill indicator, entrance kartu).
+     - `SpatialHeavy`: `dampingRatio = 0.82f`, `stiffness = 380f` (transisi layar, sheet morphing, IME dock).
+   - **Effects Tokens (Alpha / Opacity & Warna; NoBouncy)**:
+     - `Effects`: `dampingRatio = Spring.DampingRatioNoBouncy (1.0f)`, `stiffness = 1000f` (Float & Color tanpa flickering).
+     - `Effects.Fast`: `stiffness = 1200f`.
+     - `Effects.Dismiss`: `stiffness = 1500f`, `visibilityThreshold = 4f`.
+   - **Press Token**:
+     - `Press`: `dampingRatio = 0.80f`, `stiffness = 1200f`.
+   - **Ambient Tokens**:
+     - `Ambient.Shimmer`: `dampingRatio = 0.80f`, `stiffness = 60f`.
+     - `Ambient.Breathe`: `dampingRatio = 0.80f`, `stiffness = 50f`.
+   - **Pill Dock Transitions**:
+     - `Pill.Throw` (muncul): `dampingRatio = 0.72f`, `stiffness = 500f` (lemparan elastis).
+     - `Pill.Drop` (sembunyi): `dampingRatio = 1.0f`, `stiffness = 700f` (jatuh gravitasi).
 3. **Tactile Scale Feedback**:
-   - Setiap elemen yang dapat diklik (`noirClickable`) mengecil ke scale `0.96f` saat ditekan, lalu membal kembali ke `1.0f`.
+   - Setiap elemen yang dapat diklik mengecil saat ditekan (scale `0.93f`–`0.96f`), lalu membal kembali ke `1.0f` via pegas fisika `NoirMotion.SpatialFast` / `Press`.
 4. **Bypass Developer Options 0x**:
    - Pengguna dengan *Animation Scale 0x* di Android Developer Options tetap dapat menikmati animasi halus melalui injeksi `NoirForceMotionScale`.
+   - Pengguna dengan preferensi *Reduced Motion* in-app tetap menikmati transisi pegas super kaku tanpa snap instan via override `stiffSpring` (`NoBouncy`, `stiffness = 4000f`).

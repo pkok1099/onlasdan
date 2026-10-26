@@ -110,12 +110,12 @@ fun UpdatesScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         val headerProgress by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.spatialSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Spatial.asFloat),
             label = "updatesHeaderProgress",
         )
         val headerAlpha by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
             label = "updatesHeaderAlpha",
         )
         headerPlacements.forEach { placement ->
@@ -149,7 +149,7 @@ fun UpdatesScreen(
 
             when {
                 enabled.contains(UpdatesBrick.Loading) -> {
-                    com.onlasdan.comic.ui.components.PlaceholderGrid()
+                    com.onlasdan.comic.ui.components.PlaceholderGrid(columns = columns)
                 }
 
                 enabled.contains(UpdatesBrick.Error) -> ErrorState(
@@ -168,7 +168,7 @@ fun UpdatesScreen(
                     SideEffect { updatesShown = true }
                     val updatesAlpha by animateNoirFloatAsState(
                         targetValue = if (updatesShown) 1f else 0f,
-                        animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+                        animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
                         label = "updatesFade",
                     )
                     LazyColumn(

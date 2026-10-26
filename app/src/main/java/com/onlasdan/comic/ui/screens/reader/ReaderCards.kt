@@ -2,7 +2,6 @@ package com.onlasdan.comic.ui.screens.reader
 
 import android.os.BatteryManager
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.components.PrimaryButton
 import com.onlasdan.comic.ui.theme.*
+import com.onlasdan.comic.ui.util.noirClickable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -191,7 +191,7 @@ fun EndOfChapterCard(
                             border = BorderStroke(StrokeWidth.regular, DarkOutline),
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { onNavigatePrev() },
+                                .noirClickable(pressedScale = 0.94f) { onNavigatePrev() },
                         ) {
                             Row(
                                 modifier = Modifier.padding(vertical = 12.dp),
@@ -220,7 +220,7 @@ fun EndOfChapterCard(
                         border = BorderStroke(StrokeWidth.regular, if (isLatest) PrimaryPink else DarkOutline),
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { onBackToDetail() },
+                            .noirClickable(pressedScale = 0.94f) { onBackToDetail() },
                     ) {
                         Row(
                             modifier = Modifier.padding(vertical = 12.dp),

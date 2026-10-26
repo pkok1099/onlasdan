@@ -60,10 +60,10 @@ class KomikuScraper {
             val doc = Jsoup.parse(html)
 
             val popularArticles = doc.select("#Rekomendasi_Komik article, #rank-harian article, #rank-mingguan article")
-            val popular = popularArticles.mapNotNull(KomikuParser::toHomeComicItem)
+            val popular = popularArticles.mapNotNull(KomikuParser::toHomeComicItem).distinctBy { it.url }
 
             val latestArticles = doc.select("#Terbaru article, .ls2-wrap article, #Baru_Ditambahkan article")
-            val latest = latestArticles.mapNotNull(KomikuParser::toHomeComicItem)
+            val latest = latestArticles.mapNotNull(KomikuParser::toHomeComicItem).distinctBy { it.url }
 
             val hotManga = doc.select("#Komik_Hot_Manga article").mapNotNull(KomikuParser::toHomeComicItem)
             val hotManhwa = doc.select("#Komik_Hot_Manhwa article").mapNotNull(KomikuParser::toHomeComicItem)

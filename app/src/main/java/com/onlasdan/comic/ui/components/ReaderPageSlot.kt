@@ -3,9 +3,6 @@ package com.onlasdan.comic.ui.components
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -46,6 +43,7 @@ import com.onlasdan.comic.ui.theme.TextSecondary
 import com.onlasdan.comic.ui.util.NoirForceMotionScale
 import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.animateNoirFloatAsState
+import com.onlasdan.comic.ui.util.noirClickable
 import com.onlasdan.comic.ui.util.rememberReducedMotion
 import kotlinx.coroutines.withContext
 
@@ -82,7 +80,7 @@ fun ReaderPageSlot(
     val edgeColor = if (isError) SoftBlush.copy(alpha = 0.25f) else SlotEdgeColor
 
     // Breathing pulse — hanya saat loading/retrying; berhenti total saat error.
-    val breatheSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.breatheSpring()
+    val breatheSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.Ambient.Breathe
     val pulse = remember { Animatable(0.55f) }
     LaunchedEffect(state, breatheSpec) {
         if (state is ReaderPageSlotState.Error) {
@@ -185,7 +183,7 @@ private fun BoxScope.SlotStatus(
 @Composable
 private fun BlushSpinner() {
     val rotation = remember { Animatable(0f) }
-    val spec = NoirMotion.shimmerSpring()
+    val spec = NoirMotion.Ambient.Shimmer
     LaunchedEffect(spec) {
         withContext(NoirForceMotionScale) {
             while (true) {
@@ -210,31 +208,15 @@ private fun BlushSpinner() {
 }
 
 /**
- * Tombol kapsul retry: tactile feedback scale 0.94f -> 1.0f dengan
- * Spatial Spring (0.8f, 800f), bypass 0x via animateNoirFloatAsState.
+ * Tombol kapsul retry: tactile feedback scale 0.94f via noirClickable.
  */
 @Composable
 private fun RetryCapsule(onRetry: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateNoirFloatAsState(
-        targetValue = if (pressed) 0.94f else 1f,
-        animationSpec = NoirMotion.spatialSpring(),
-        label = "retryCapsulePress",
-    )
     Box(
         modifier = Modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
             .clip(RoundedCornerShape(999.dp))
             .background(SoftBlush)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onRetry,
-            )
+            .noirClickable(pressedScale = 0.94f) { onRetry() }
             .padding(horizontal = 20.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) {

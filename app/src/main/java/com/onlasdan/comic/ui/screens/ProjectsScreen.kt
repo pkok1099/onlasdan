@@ -1,7 +1,5 @@
 package com.onlasdan.comic.ui.screens
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +26,9 @@ import com.onlasdan.comic.ui.screens.projects.ProjectsBrick
 import com.onlasdan.comic.ui.screens.projects.ProjectsLayoutState
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.source.SourceRegistry
+import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.UiMemoryCache
+import com.onlasdan.comic.ui.util.animateNoirFloatAsState
 import com.onlasdan.comic.ui.util.rememberSelectedSource
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -67,7 +67,7 @@ fun ProjectsScreen(
     when {
         data != null -> ProjectsContent(data.orEmpty(), onComicClick, onBack, isHd, columns, blueprint)
         failed -> ErrorState(message = stringResource(R.string.common_failed_load), onRetry = { reloadKey++ }, modifier = Modifier.fillMaxSize())
-        else -> PlaceholderGrid()
+        else -> PlaceholderGrid(columns = columns)
     }
 }
 
@@ -95,9 +95,9 @@ private fun ProjectsContent(
 
     var shown by remember { mutableStateOf(false) }
     SideEffect { shown = true }
-    val contentAlpha by animateFloatAsState(
+    val contentAlpha by animateNoirFloatAsState(
         targetValue = if (shown) 1f else 0f,
-        animationSpec = tween(300),
+        animationSpec = NoirMotion.Effects.Float,
         label = "projectsContentFade",
     )
     Column(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = contentAlpha }) {

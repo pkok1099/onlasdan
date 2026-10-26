@@ -4,12 +4,11 @@ import android.content.Intent
 import android.net.Uri
 import android.text.format.Formatter
 import android.view.HapticFeedbackConstants
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -51,15 +51,18 @@ import com.onlasdan.comic.data.db.BookmarkEntity
 import com.onlasdan.comic.data.db.ComicDatabase
 import com.onlasdan.comic.data.db.DownloadedChapterEntity
 import com.onlasdan.comic.data.db.HistoryEntity
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicThumbSfxStamp
 import com.onlasdan.comic.ui.download.ChapterDownloadManager
 import com.onlasdan.comic.ui.source.*
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.DbChangeNotifier
 import com.onlasdan.comic.ui.util.DelayedDelete
+import com.onlasdan.comic.ui.util.NoirAnimatedVisibility
+import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.chapterSlugOf
 import com.onlasdan.comic.ui.util.downloadDeleteKey
 import com.onlasdan.comic.ui.util.markChaptersRead
-import com.onlasdan.comic.ui.util.pressScale
+import com.onlasdan.comic.ui.util.noirClickable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -396,6 +399,7 @@ fun ComicDetailSheet(
                                     val dlProgress = dl?.let { if (it.totalPages > 0) it.downloadedPages.toFloat() / it.totalPages else 0f }
 
                                     ChapterRowItem(
+                                        modifier = Modifier.animateItem(fadeInSpec = NoirMotion.Effects.Float, fadeOutSpec = NoirMotion.Effects.Float, placementSpec = NoirMotion.Spatial.asOffset),
                                         chapter = ch,
                                         isRead = isRead,
                                         downloadStatus = dl?.status,
@@ -453,16 +457,20 @@ fun ComicDetailSheet(
             }
 
             // Floating Multi-Select Bottom Bar
-            if (selectionMode) {
+            NoirAnimatedVisibility(
+                visible = selectionMode,
+                slideDistance = 48.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+            ) {
                 Surface(
                     color = DarkSurfaceElevated,
                     border = BorderStroke(StrokeWidth.regular, DarkOutline),
                     shadowElevation = 8.dp,
                     shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .navigationBarsPadding(),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
                         modifier = Modifier
@@ -504,11 +512,7 @@ fun ComicDetailSheet(
                                     },
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                 ) {
-                                    Text(
-                                        text = stringResource(R.string.detail_select_all),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = AccentPink,
-                                    )
+                                    Text(stringResource(R.string.detail_select_all), style = MaterialTheme.typography.labelSmall, color = AccentPink)
                                 }
                                 TextButton(
                                     onClick = {
@@ -517,11 +521,7 @@ fun ComicDetailSheet(
                                     },
                                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                 ) {
-                                    Text(
-                                        text = stringResource(R.string.detail_cancel_select),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextSecondary,
-                                    )
+                                    Text(stringResource(R.string.detail_cancel_select), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                 }
                             }
                         }
@@ -536,7 +536,7 @@ fun ComicDetailSheet(
                                 border = BorderStroke(StrokeWidth.regular, DarkOutline),
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clickable(enabled = selectedChapters.isNotEmpty()) {
+                                    .noirClickable(pressedScale = 0.94f, enabled = selectedChapters.isNotEmpty()) {
                                         scope.launch {
                                             markChaptersRead(context, comicId, selectedChapters.toList(), source.id)
                                             selectionMode = false
@@ -573,7 +573,7 @@ fun ComicDetailSheet(
                                 ),
                                 modifier = Modifier
                                     .weight(1f)
-                                    .clickable(enabled = selectedChapters.isNotEmpty()) {
+                                    .noirClickable(pressedScale = 0.94f, enabled = selectedChapters.isNotEmpty()) {
                                         val currentDetail = comicDetail
                                         if (currentDetail != null) {
                                             val chsToDownload = chapters.filter {
@@ -699,7 +699,7 @@ private fun DetailInfoSection(
                     .aspectRatio(2f / 3f)
                     .clip(CardShape)
                     .background(DarkSurfaceElevated)
-                    .border(BorderStroke(StrokeWidth.hairline, DarkOutline), CardShape),
+                    .border(BorderStroke(1.dp, Brush.linearGradient(listOf(ComicVibrantColors.ComicPink, ComicVibrantColors.ManhwaCyan))), CardShape),
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(context)
@@ -710,6 +710,7 @@ private fun DetailInfoSection(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
+                ComicThumbSfxStamp(seed = comic.id, type = comic.type)
             }
 
             // Metadata
@@ -759,16 +760,13 @@ private fun DetailInfoSection(
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = null,
-                                    tint = AccentPink,
+                                    tint = ComicSfxYellow,
                                     modifier = Modifier.size(10.dp),
                                 )
                                 Text(
                                     text = comic.rating,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 9.sp,
-                                    ),
-                                    color = AccentPink,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                                    color = ComicSfxYellow,
                                 )
                             }
                         }
@@ -792,7 +790,7 @@ private fun DetailInfoSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Spacing.lg)
-                    .clickable { onReadChapter(history.chapterSlug) },
+                    .noirClickable(pressedScale = 0.96f) { onReadChapter(history.chapterSlug) },
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
@@ -959,7 +957,8 @@ private fun DetailInfoSection(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Spacing.lg),
+                    .padding(horizontal = Spacing.lg)
+                    .animateContentSize(animationSpec = NoirMotion.SpatialMedium.spec()),
             ) {
                 Text(
                     text = comic.synopsis,
@@ -974,7 +973,7 @@ private fun DetailInfoSection(
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = PrimaryPink,
                         modifier = Modifier
-                            .clickable { onToggleSynopsis() }
+                            .noirClickable(pressedScale = 0.92f) { onToggleSynopsis() }
                             .padding(vertical = Spacing.xs),
                     )
                 }

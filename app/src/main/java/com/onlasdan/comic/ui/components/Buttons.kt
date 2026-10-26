@@ -130,9 +130,9 @@ fun AppChip(
     icon: ImageVector? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val borderColor = if (selected) PrimaryPink else DarkOutline
+    val borderColor = if (selected) ComicVibrantColors.ComicPink else DarkOutline
     val bgColor = if (selected) DarkSurfaceElevated else DarkSurface
-    val textColor = if (selected) AccentPink else TextSecondary
+    val textColor = if (selected) ComicVibrantColors.ManhwaCyan else TextSecondary
 
     Surface(
         modifier = modifier

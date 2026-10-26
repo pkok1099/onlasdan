@@ -1,6 +1,5 @@
 package com.onlasdan.comic.ui.screens.browse
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -90,6 +89,7 @@ import com.onlasdan.comic.ui.util.bindAutoHideOnScroll
 import com.onlasdan.comic.ui.util.collapsibleHeader
 import com.onlasdan.comic.ui.util.extractSlug
 import com.onlasdan.comic.ui.util.getImageUrl
+import com.onlasdan.comic.ui.util.noirClickable
 import com.onlasdan.comic.ui.util.rememberNoirSpec
 import com.onlasdan.comic.ui.util.rememberSelectedSource
 import kotlinx.coroutines.CancellationException
@@ -248,12 +248,12 @@ fun BrowseScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         val headerProgress by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.spatialSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Spatial.asFloat),
             label = "browseHeaderProgress",
         )
         val headerAlpha by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
             label = "browseHeaderAlpha",
         )
 
@@ -318,7 +318,7 @@ fun BrowseScreen(
 
                     BrowseBrick.Results -> {
                         if (!showResults) {
-                            com.onlasdan.comic.ui.components.PlaceholderGrid()
+                            com.onlasdan.comic.ui.components.PlaceholderGrid(columns = columns)
                         } else {
                             when {
                                 state.error != null -> ErrorState(
@@ -341,7 +341,7 @@ fun BrowseScreen(
                                             SideEffect { browseShown = true }
                                             val browseAlpha by animateNoirFloatAsState(
                                                 targetValue = if (browseShown) 1f else 0f,
-                                                animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+                                                animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
                                                 label = "browseFade",
                                             )
                                             Box(Modifier.graphicsLayer { alpha = browseAlpha }) {
@@ -362,7 +362,7 @@ fun BrowseScreen(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
-                                                                .animateItem()
+                                                                .animateItem(fadeInSpec = NoirMotion.Effects.Float, fadeOutSpec = NoirMotion.Effects.Float, placementSpec = NoirMotion.Spatial.asOffset)
                                                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                                                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                                                         ) {
@@ -997,7 +997,7 @@ private fun MultiSelectSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
+                    .noirClickable(pressedScale = 0.97f) {
                         onSelectedChange(
                             if (checked) selected - opt.value else selected + opt.value,
                         )

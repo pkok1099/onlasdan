@@ -2,7 +2,6 @@ package com.onlasdan.comic.ui.screens
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -61,6 +60,7 @@ import com.onlasdan.comic.ui.util.animateNoirFloatAsState
 import com.onlasdan.comic.ui.util.bindAutoHideOnScroll
 import com.onlasdan.comic.ui.util.clearHistory
 import com.onlasdan.comic.ui.util.collapsibleHeader
+import com.onlasdan.comic.ui.util.noirClickable
 import com.onlasdan.comic.ui.util.rememberNoirSpec
 import com.onlasdan.comic.ui.util.rememberSelectedSource
 import com.onlasdan.comic.ui.util.removeHistoryEntry
@@ -182,12 +182,12 @@ fun ProfileScreen(
         topBar = {
             val headerProgress by animateNoirFloatAsState(
                 targetValue = if (headerVisible.value) 1f else 0f,
-                animationSpec = rememberNoirSpec(NoirMotion.spatialSpring()),
+                animationSpec = rememberNoirSpec(NoirMotion.Spatial.asFloat),
                 label = "profileHeaderProgress",
             )
             val headerAlpha by animateNoirFloatAsState(
                 targetValue = if (headerVisible.value) 1f else 0f,
-                animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+                animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
                 label = "profileHeaderAlpha",
             )
             Box(
@@ -399,7 +399,15 @@ private fun HistoryList(onExplore: () -> Unit, history: List<HistoryEntry>, list
             key = { "${it.source}:${it.comicSlug}:${it.chapterSlug}" },
             contentType = { "history_row" },
         ) { entry ->
-            HistoryRow(entry, onOpen, onDelete)
+            Box(
+                Modifier.animateItem(
+                    fadeInSpec = NoirMotion.Effects.Float,
+                    fadeOutSpec = NoirMotion.Effects.Float,
+                    placementSpec = NoirMotion.Spatial.asOffset,
+                ),
+            ) {
+                HistoryRow(entry, onOpen, onDelete)
+            }
         }
     }
 }
@@ -411,7 +419,7 @@ private fun HistoryRow(entry: HistoryEntry, onOpen: (HistoryEntry) -> Unit, onDe
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .clickable { onOpen(entry) }
+            .noirClickable(pressedScale = 0.96f) { onOpen(entry) }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

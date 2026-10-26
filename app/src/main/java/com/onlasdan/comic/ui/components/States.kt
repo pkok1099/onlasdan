@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.theme.*
+import com.onlasdan.comic.ui.util.NoirAnimatedVisibility
 
 @Composable
 fun EmptyState(
@@ -113,7 +114,17 @@ private fun ErrorDebugDetail(debugMessage: String, expanded: Boolean, onToggle: 
             color = TextSecondary,
         )
     }
-    if (expanded) {
+    NoirAnimatedVisibility(visible = expanded, slideDistance = 16.dp) {
+        ErrorDebugDetailBody(context = context, debugMessage = debugMessage, copiedText = copiedText)
+    }
+}
+
+@Composable
+private fun ErrorDebugDetailBody(context: android.content.Context, debugMessage: String, copiedText: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+    ) {
         Text(
             text = debugMessage,
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),

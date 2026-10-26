@@ -64,6 +64,7 @@ import com.onlasdan.comic.ui.theme.PrimaryPink
 import com.onlasdan.comic.ui.theme.TextPrimary
 import com.onlasdan.comic.ui.theme.TextSecondary
 import com.onlasdan.comic.ui.util.DelayedDelete
+import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.UiPreferences
 import com.onlasdan.comic.ui.util.downloadDeleteKey
 import com.onlasdan.comic.ui.util.noirClickable
@@ -150,7 +151,9 @@ private fun DownloadsList(
             )
         }
         items(groups.entries.toList(), key = { "comic-${it.key.first}-${it.key.second}" }) { entry ->
-            DownloadComicCard(entry.value, onOpen = { onOpenComic(entry.key) })
+            Box(Modifier.animateItem(fadeInSpec = NoirMotion.Effects.Float, fadeOutSpec = NoirMotion.Effects.Float, placementSpec = NoirMotion.Spatial.asOffset)) {
+                DownloadComicCard(entry.value, onOpen = { onOpenComic(entry.key) })
+            }
         }
     }
 }
@@ -239,7 +242,15 @@ private fun DownloadComicSheet(
         DownloadSheetHeader(chapters, onDeleteAll)
         LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
             items(chapters, key = { "dl-${it.source}-${it.comicSlug}-${it.chapterSlug}" }) { entity ->
-                DownloadChapterRow(entity, onRead = { onReadChapter(entity.comicSlug, entity.source, entity.chapterSlug) })
+                Box(
+                    Modifier.animateItem(
+                        fadeInSpec = NoirMotion.Effects.Float,
+                        fadeOutSpec = NoirMotion.Effects.Float,
+                        placementSpec = NoirMotion.Spatial.asOffset,
+                    ),
+                ) {
+                    DownloadChapterRow(entity, onRead = { onReadChapter(entity.comicSlug, entity.source, entity.chapterSlug) })
+                }
             }
         }
     }

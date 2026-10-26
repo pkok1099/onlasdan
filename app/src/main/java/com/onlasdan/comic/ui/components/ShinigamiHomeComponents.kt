@@ -7,7 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,6 +42,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.onlasdan.comic.R
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicThumbSfxStamp
+import com.onlasdan.comic.ui.components.pulltorefresh.comicShockwaveCard
+import com.onlasdan.comic.ui.components.pulltorefresh.comicShockwaveHero
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.source.Paged
 import com.onlasdan.comic.ui.theme.*
@@ -78,7 +81,7 @@ fun ShinigamiHeroCarousel(
                 val next = (pagerState.currentPage + 1) % carouselItems.size
                 pagerState.animateScrollToPage(
                     page = next,
-                    animationSpec = NoirMotion.spatialSpring(),
+                    animationSpec = NoirMotion.Spatial.asFloat,
                 )
             }
         }
@@ -115,7 +118,7 @@ fun ShinigamiHeroCarousel(
                     val targetWidth = if (isActive) 18f else 6f
                     val dotWidth by animateNoirFloatAsState(
                         targetValue = targetWidth,
-                        animationSpec = NoirMotion.spatialSpring(),
+                        animationSpec = NoirMotion.Spatial.asFloat,
                         label = "shinigamiDotWidth_$dotIdx",
                     )
                     Box(
@@ -146,6 +149,7 @@ private fun ShinigamiHeroSlide(
             .fillMaxWidth()
             .padding(horizontal = Spacing.lg)
             .aspectRatio(4f / 3.4f)
+            .comicShockwaveHero(14.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(DarkSurfaceElevated)
             .pressScale(interactionSource)
@@ -155,10 +159,7 @@ private fun ShinigamiHeroSlide(
             ShimmerBox(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(14.dp))
         }
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(comic.cover)
-                .crossfade(true)
-                .build(),
+            model = ImageRequest.Builder(LocalContext.current).data(comic.cover).crossfade(true).build(),
             contentDescription = comic.title,
             contentScale = ContentScale.Crop,
             onState = { imgLoaded = it is coil.compose.AsyncImagePainter.State.Success },
@@ -378,7 +379,11 @@ fun ShinigamiRecommendationsSection(
                         key = { it },
                         contentType = { "shinigami_rec_skeleton" },
                     ) {
-                        CardPlaceholder(width = 140.dp)
+                        CardPlaceholder(
+                            width = 140.dp,
+                            posterShape = RoundedCornerShape(10.dp),
+                            showTextLines = false,
+                        )
                     }
                 }
             }
@@ -388,14 +393,15 @@ fun ShinigamiRecommendationsSection(
                 contentPadding = PaddingValues(horizontal = Spacing.lg),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
-                items(
+                itemsIndexed(
                     items = currentComics,
-                    key = { "${it.sourceId}_${it.id}" },
-                    contentType = { "shinigami_rec_card" },
-                ) { comic ->
+                    key = { _, it -> "${it.sourceId}_${it.id}" },
+                    contentType = { _, _ -> "shinigami_rec_card" },
+                ) { index, comic ->
                     ShinigamiRecommendationCard(
                         comic = comic,
                         onClick = { onComicClick(comic) },
+                        modifier = Modifier.staggeredEntrance(index, index >= 6, "${selectedFormat}_${comic.id}"),
                     )
                 }
             }
@@ -416,15 +422,10 @@ fun ShinigamiRecommendationCard(
     val cardBounds = remember { CardBoundsHolder() }
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
-    val screenWidthPx = remember(windowInfo.containerSize) {
-        windowInfo.containerSize.width
-    }
+    val screenWidthPx = remember(windowInfo.containerSize) { windowInfo.containerSize.width }
     val context = LocalContext.current
     val imageRequest = remember(comic.cover, context) {
-        ImageRequest.Builder(context)
-            .data(comic.cover)
-            .crossfade(true)
-            .build()
+        ImageRequest.Builder(context).data(comic.cover).crossfade(true).build()
     }
     var imgLoaded by remember { mutableStateOf(false) }
     val fallbackSource = com.onlasdan.comic.ui.util.rememberSelectedSource()
@@ -462,12 +463,9 @@ fun ShinigamiRecommendationCard(
         modifier = modifier
             .width(width)
             .aspectRatio(2f / 3f)
-            .graphicsLayer {
-                alpha = if (isBeingMorphed) 0f else 1f
-            }
-            .onGloballyPositioned { coordinates ->
-                cardBounds.bounds = coordinates.boundsInRoot()
-            }
+            .comicShockwaveCard(cardBounds, 10.dp)
+            .graphicsLayer { alpha = if (isBeingMorphed) 0f else 1f }
+            .onGloballyPositioned { coordinates -> cardBounds.bounds = coordinates.boundsInRoot() }
             .noirCombinedClickable(pressedScale = 0.94f, onLongClick = effectiveLongClick, onClick = onClick),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -481,6 +479,7 @@ fun ShinigamiRecommendationCard(
                 onState = { imgLoaded = it is coil.compose.AsyncImagePainter.State.Success },
                 modifier = Modifier.fillMaxSize(),
             )
+            ComicThumbSfxStamp(seed = comic.id, type = comic.type)
 
             // Top Badges
             Row(
@@ -711,6 +710,8 @@ fun ShinigamiUpdateSection(
                                 CardPlaceholder(
                                     modifier = Modifier.weight(1f),
                                     width = Dp.Unspecified,
+                                    posterRatio = 3f / 4.4f,
+                                    posterShape = RoundedCornerShape(10.dp),
                                 )
                             }
                         }
@@ -734,7 +735,7 @@ fun ShinigamiUpdateSection(
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .staggeredEntrance(0, entranceDone),
+                                    .staggeredEntrance(rIdx * 3 + cIdx, false, "${selectedFilter}_${currentPage}_${comic.id}"),
                             ) {
                                 ShinigamiUpdateCard(
                                     comic = comic,
@@ -762,7 +763,7 @@ fun ShinigamiUpdateSection(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .staggeredEntrance(0, entranceDone),
+                            .staggeredEntrance(idx, false, "${selectedFilter}_${currentPage}_${comic.id}"),
                     ) {
                         ComicCard(
                             comic = comic,
@@ -806,15 +807,10 @@ fun ShinigamiUpdateCard(
     val cardBounds = remember { CardBoundsHolder() }
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
-    val screenWidthPx = remember(windowInfo.containerSize) {
-        windowInfo.containerSize.width
-    }
+    val screenWidthPx = remember(windowInfo.containerSize) { windowInfo.containerSize.width }
     val context = LocalContext.current
     val imageRequest = remember(comic.cover, context) {
-        ImageRequest.Builder(context)
-            .data(comic.cover)
-            .crossfade(true)
-            .build()
+        ImageRequest.Builder(context).data(comic.cover).crossfade(true).build()
     }
     var imgLoaded by remember { mutableStateOf(false) }
     val fallbackSource = com.onlasdan.comic.ui.util.rememberSelectedSource()
@@ -849,9 +845,8 @@ fun ShinigamiUpdateCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                alpha = if (isBeingMorphed) 0f else 1f
-            }
+            .comicShockwaveCard(cardBounds, 10.dp)
+            .graphicsLayer { alpha = if (isBeingMorphed) 0f else 1f }
             .noirCombinedClickable(pressedScale = 0.95f, onLongClick = effectiveLongClick, onClick = onClick),
     ) {
         // Poster image container (Ratio 3:4.4 matching prototype)
@@ -862,9 +857,7 @@ fun ShinigamiUpdateCard(
                 .clip(RoundedCornerShape(10.dp))
                 .background(DarkSurfaceElevated)
                 .border(BorderStroke(StrokeWidth.hairline, DarkOutline), RoundedCornerShape(10.dp))
-                .onGloballyPositioned { coordinates ->
-                    cardBounds.bounds = coordinates.boundsInRoot()
-                },
+                .onGloballyPositioned { coordinates -> cardBounds.bounds = coordinates.boundsInRoot() },
         ) {
             if (!imgLoaded) {
                 ShimmerBox(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(10.dp))
@@ -876,6 +869,7 @@ fun ShinigamiUpdateCard(
                 onState = { imgLoaded = it is coil.compose.AsyncImagePainter.State.Success },
                 modifier = Modifier.fillMaxSize(),
             )
+            ComicThumbSfxStamp(seed = comic.id, type = comic.type)
 
             // Top-right country flag
             if (flag != null) {

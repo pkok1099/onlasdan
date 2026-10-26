@@ -9,7 +9,6 @@ app/src/main/java/com/onlasdan/comic/ui/components/ShinigamiHomeComponents.kt|96
 app/src/main/java/com/onlasdan/comic/ui/MainActivity.kt|941|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
 app/src/main/java/com/onlasdan/comic/ui/chrome/UnifiedMorphingDock.kt|640|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
 app/src/main/java/com/onlasdan/comic/scraper/KomikindoScraper.kt|611|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
-app/src/main/java/com/onlasdan/comic/ui/components/Skeletons.kt|589|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
 app/src/main/java/com/onlasdan/comic/scraper/KomikuScraper.kt|586|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
 app/src/main/java/com/onlasdan/comic/ui/util/Motion.kt|580|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.
 app/src/main/java/com/onlasdan/comic/ui/components/ProfileBackupSheet.kt|572|Warisan sebelum kebijakan 2026-10-22; dibekukan — tidak boleh tumbuh.

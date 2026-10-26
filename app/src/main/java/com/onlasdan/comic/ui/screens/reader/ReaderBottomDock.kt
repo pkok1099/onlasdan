@@ -1,6 +1,7 @@
 package com.onlasdan.comic.ui.screens.reader
 
 import android.content.Context
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,6 +38,7 @@ import androidx.compose.ui.zIndex
 import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.NoirAnimatedVisibility
+import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.chapterSlugOf
 import com.onlasdan.comic.ui.util.extractSlug
 import kotlin.math.roundToInt
@@ -244,6 +246,7 @@ fun ReaderBottomDock(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .animateContentSize(animationSpec = NoirMotion.SpatialMedium.spec())
                 .padding(vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

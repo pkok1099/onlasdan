@@ -1,7 +1,6 @@
 package com.onlasdan.comic.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -51,6 +50,7 @@ import com.onlasdan.comic.ui.util.UiMemoryCache
 import com.onlasdan.comic.ui.util.animateNoirFloatAsState
 import com.onlasdan.comic.ui.util.bindAutoHideOnScroll
 import com.onlasdan.comic.ui.util.collapsibleHeader
+import com.onlasdan.comic.ui.util.noirClickable
 import com.onlasdan.comic.ui.util.rememberNoirSpec
 import com.onlasdan.comic.ui.util.rememberSelectedSource
 import java.util.Locale
@@ -112,12 +112,12 @@ fun GenresListScreen(onGenreClick: (String) -> Unit, onBack: (() -> Unit)? = nul
     ) {
         val headerProgress by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.spatialSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Spatial.asFloat),
             label = "genresListHeaderProgress",
         )
         val headerAlpha by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
             label = "genresListHeaderAlpha",
         )
         headerPlacements.forEach { placement ->
@@ -190,7 +190,7 @@ fun GenresListScreen(onGenreClick: (String) -> Unit, onBack: (() -> Unit)? = nul
                         ) { item ->
                             ListItem(
                                 headlineContent = { Text(item.label) },
-                                modifier = Modifier.clickable {
+                                modifier = Modifier.noirClickable(pressedScale = 0.96f) {
                                     genresSearchOpen = false
                                     onGenreClick(item.value)
                                 },
@@ -204,7 +204,7 @@ fun GenresListScreen(onGenreClick: (String) -> Unit, onBack: (() -> Unit)? = nul
 
         when {
             enabled.contains(GenresListBrick.Loading) -> {
-                com.onlasdan.comic.ui.components.PlaceholderGrid(modifier = Modifier.weight(1f))
+                com.onlasdan.comic.ui.components.GenresListPlaceholder(modifier = Modifier.weight(1f))
             }
 
             enabled.contains(GenresListBrick.Error) -> ErrorState(
@@ -326,12 +326,12 @@ fun GenreDetailScreen(
     ) {
         val headerProgress by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.spatialSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Spatial.asFloat),
             label = "genreDetailHeaderProgress",
         )
         val headerAlpha by animateNoirFloatAsState(
             targetValue = if (headerVisible.value) 1f else 0f,
-            animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+            animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
             label = "genreDetailHeaderAlpha",
         )
         headerPlacements.forEach { placement ->
@@ -359,7 +359,10 @@ fun GenreDetailScreen(
 
         when {
             enabled.contains(GenreDetailBrick.Loading) -> {
-                com.onlasdan.comic.ui.components.PlaceholderGrid(modifier = Modifier.weight(1f))
+                com.onlasdan.comic.ui.components.PlaceholderGrid(
+                    modifier = Modifier.weight(1f),
+                    columns = columns,
+                )
             }
 
             enabled.contains(GenreDetailBrick.Error) -> ErrorState(

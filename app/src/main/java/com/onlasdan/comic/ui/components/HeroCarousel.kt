@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.onlasdan.comic.R
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicThumbSfxStamp
+import com.onlasdan.comic.ui.components.pulltorefresh.comicShockwaveHero
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.NoirMotion
@@ -65,7 +67,7 @@ fun HeroCarousel(
                 val next = (pagerState.currentPage + 1) % carouselItems.size
                 pagerState.animateScrollToPage(
                     page = next,
-                    animationSpec = NoirMotion.spatialSpring(),
+                    animationSpec = NoirMotion.Spatial.asFloat,
                 )
             }
         }
@@ -103,7 +105,7 @@ fun HeroCarousel(
                     val targetWidth = if (isActive) 18f else 6f
                     val dotWidth by animateNoirFloatAsState(
                         targetValue = targetWidth,
-                        animationSpec = NoirMotion.spatialSpring(),
+                        animationSpec = NoirMotion.Spatial.asFloat,
                         label = "dotWidth_$dotIdx",
                     )
                     Box(
@@ -120,7 +122,13 @@ fun HeroCarousel(
                                 }
                             }
                             .clip(CircleShape)
-                            .background(if (isActive) PrimaryPink else DarkOutlineVariant),
+                            .background(
+                                if (isActive) {
+                                    Brush.horizontalGradient(listOf(ComicVibrantColors.ComicPink, ComicVibrantColors.ManhwaCyan))
+                                } else {
+                                    androidx.compose.ui.graphics.SolidColor(DarkOutlineVariant)
+                                },
+                            ),
                     )
                 }
             }
@@ -149,9 +157,10 @@ private fun HeroSlide(
             .fillMaxWidth()
             .padding(horizontal = Spacing.lg)
             .aspectRatio(16f / 9f)
+            .comicShockwaveHero(CardCornerRadius)
             .clip(CardShape)
             .background(DarkSurfaceElevated)
-            .border(BorderStroke(StrokeWidth.hairline, DarkOutline), CardShape)
+            .border(BorderStroke(StrokeWidth.regular, DarkOutlineVariant), CardShape)
             .pressScale(interactionSource)
             .clickable(interactionSource = interactionSource, indication = null) { onClick() },
     ) {
@@ -170,6 +179,7 @@ private fun HeroSlide(
                     drawRect(HeroBottomGradient)
                 },
         )
+        ComicThumbSfxStamp(seed = comic.id, type = comic.type, isHero = true)
 
         // Overlay content: Top badges + Bottom text & CTA button
         Column(
@@ -199,14 +209,14 @@ private fun HeroSlide(
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = PrimaryPink,
+                                tint = ComicSfxYellow,
                                 modifier = Modifier.size(10.dp),
                             )
                             Spacer(modifier = Modifier.width(2.dp))
                             Text(
                                 text = comic.rating,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = AccentPink,
+                                color = ComicSfxYellow,
                             )
                         }
                     }

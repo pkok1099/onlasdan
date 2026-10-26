@@ -2,8 +2,6 @@ package com.onlasdan.comic.ui.components
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -44,12 +42,8 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Singleton dismiss spring spec agar tidak merekonstruksi instance baru tiap recomposition. */
-private val DismissSpring = spring<Float>(
-    dampingRatio = Spring.DampingRatioNoBouncy,
-    stiffness = 1500f,
-    visibilityThreshold = 4f,
-)
+/** Singleton dismiss spring spec dari Effects.Dismiss. */
+private val DismissSpring = NoirMotion.Effects.Dismiss
 
 /**
  * Menghitung opasitas scrim berdasarkan progress sheet (1.0f = full open, 0.0f = closed).
@@ -108,7 +102,7 @@ fun NoirBottomSheet(
     // Masuk dengan spring saat pertama tampil.
     LaunchedEffect(Unit) {
         withContext(NoirForceMotionScale) {
-            offsetY.animateTo(expandedOffset, animationSpec = NoirMotion.spatialSpring())
+            offsetY.animateTo(expandedOffset, animationSpec = NoirMotion.Spatial.asFloat)
         }
     }
 
@@ -175,7 +169,7 @@ fun NoirBottomSheet(
                     // Snap kembali ke posisi expanded dengan spring natural.
                     scope.launch {
                         withContext(NoirForceMotionScale) {
-                            offsetY.animateTo(expandedOffset, animationSpec = NoirMotion.spatialSpring())
+                            offsetY.animateTo(expandedOffset, animationSpec = NoirMotion.Spatial.asFloat)
                         }
                     }
                 }
@@ -241,6 +235,8 @@ fun NoirBottomSheet(
                     .background(DarkSurface),
             )
 
+            ComicSheetAmbientBackdrop()
+
             Column(modifier = Modifier.fillMaxSize()) {
                 // Drag handle bar: draggable aktif HANYA di area handle ini agar tidak
                 // memblokir gestur scroll LazyColumn konten di bawahnya.
@@ -259,7 +255,7 @@ fun NoirBottomSheet(
                                             offsetY.animateTo(hiddenOffset, animationSpec = DismissSpring)
                                             onDismiss()
                                         } else {
-                                            offsetY.animateTo(expandedOffset, animationSpec = NoirMotion.spatialSpring())
+                                            offsetY.animateTo(expandedOffset, animationSpec = NoirMotion.Spatial.asFloat)
                                         }
                                     }
                                 }

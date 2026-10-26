@@ -119,7 +119,7 @@ class KomikuSource(private val scraper: KomikuScraper = KomikuScraper()) : Comic
                     id = "popular",
                     title = "Series Populer",
                     type = SectionType.ROW,
-                    items = data.popularComics.map { mapHomeItem(it) },
+                    items = data.popularComics.map { mapHomeItem(it) }.distinctBy { it.id },
                     hasMore = true,
                 ),
             )
@@ -131,7 +131,7 @@ class KomikuSource(private val scraper: KomikuScraper = KomikuScraper()) : Comic
                     id = "latest",
                     title = "Update Terbaru",
                     type = SectionType.GRID,
-                    items = data.latestComics.map { mapHomeItem(it) },
+                    items = data.latestComics.map { mapHomeItem(it) }.distinctBy { it.id },
                     hasMore = true,
                 ),
             )

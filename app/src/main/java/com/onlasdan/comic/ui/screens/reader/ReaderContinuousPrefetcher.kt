@@ -9,11 +9,14 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.onlasdan.comic.data.db.ComicDatabase
 import com.onlasdan.comic.ui.source.Chapter
 import com.onlasdan.comic.ui.source.SourceRegistry
+import com.onlasdan.comic.ui.util.ImageIntegrityValidator
 import com.onlasdan.comic.ui.util.extractSlug
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.withContext
+
+private const val ContinuousChapterPrefetchThreshold = 10
 
 @Composable
 fun ReaderContinuousPrefetcher(
@@ -37,7 +40,8 @@ fun ReaderContinuousPrefetcher(
         }
             .distinctUntilChanged()
             .collect { (lastVisible, total) ->
-                val reachedThreshold = (total > 0 && lastVisible >= (total - 6).coerceAtLeast(0)) || !listState.canScrollForward
+                val reachedThreshold = (total > 0 && lastVisible >= (total - ContinuousChapterPrefetchThreshold).coerceAtLeast(0)) ||
+                    !listState.canScrollForward
                 if (reachedThreshold && !isFetchingNextChapter) {
                     val lastLoaded = loadedChapters.lastOrNull() ?: return@collect
                     if (chapterList.isEmpty()) return@collect
@@ -51,7 +55,11 @@ fun ReaderContinuousPrefetcher(
                                 val images = withContext(Dispatchers.IO) {
                                     val db = ComicDatabase.get(context)
                                     val downloaded = db.downloadDao().getDownloadedPages(slug, source.lowercase().trim(), nextSlug)
-                                    if (downloaded.isNotEmpty() && downloaded.all { File(it.localFilePath).exists() }) {
+                                    if (downloaded.isNotEmpty() && downloaded.all {
+                                            val f = File(it.localFilePath)
+                                            f.exists() && ImageIntegrityValidator.isComplete(f)
+                                        }
+                                    ) {
                                         downloaded.sortedBy { it.pageIndex }.map { "file://${it.localFilePath}" }
                                     } else {
                                         SourceRegistry.get(source).pages("$slug:$nextSlug").map { it.imageUrl }

@@ -1,13 +1,7 @@
 package com.onlasdan.comic.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.core.*
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -68,6 +62,8 @@ import com.onlasdan.comic.R
 import com.onlasdan.comic.api.*
 import com.onlasdan.comic.ui.LocalErrorBackAction
 import com.onlasdan.comic.ui.LocalOnOpenDownloads
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicThumbSfxStamp
+import com.onlasdan.comic.ui.components.pulltorefresh.comicShockwaveCard
 import com.onlasdan.comic.ui.source.AppErrorHandler
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.theme.BlushTint
@@ -168,12 +164,12 @@ fun <T> ComicDataScreen(
                     SideEffect { shown = true }
                     val contentAlpha by animateNoirFloatAsState(
                         targetValue = if (shown) 1f else 0f,
-                        animationSpec = NoirMotion.effectsSpring(),
+                        animationSpec = NoirMotion.Effects.Float,
                         label = "contentFade",
                     )
                     val contentScale by animateNoirFloatAsState(
                         targetValue = if (shown) 1f else 0.98f,
-                        animationSpec = NoirMotion.spatialSpring(),
+                        animationSpec = NoirMotion.Spatial.asFloat,
                         label = "contentScale",
                     )
                     Box(
@@ -281,9 +277,8 @@ fun HomeComicCard(
     Column(
         Modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                alpha = if (isBeingMorphed) 0f else 1f
-            }
+            .comicShockwaveCard(cardBounds, 12.dp)
+            .graphicsLayer { alpha = if (isBeingMorphed) 0f else 1f }
             .noirCombinedClickable(
                 pressedScale = 0.93f,
                 onLongClick = effectiveLongClick,
@@ -300,9 +295,7 @@ fun HomeComicCard(
                 .background(MaterialTheme.colorScheme.surfaceVariant)
                 .border(BorderStroke(StrokeWidth.hairline, DarkOutline), RoundedCornerShape(12.dp))
                 .coverSharedElement(sharedKey)
-                .onGloballyPositioned { coordinates ->
-                    cardBounds.bounds = coordinates.boundsInRoot()
-                },
+                .onGloballyPositioned { coordinates -> cardBounds.bounds = coordinates.boundsInRoot() },
         ) {
             if (!imgLoaded) {
                 ShimmerBox(modifier = Modifier.fillMaxSize(), shape = RoundedCornerShape(12.dp))
@@ -314,9 +307,10 @@ fun HomeComicCard(
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
+            ComicThumbSfxStamp(seed = resolvedSlug ?: title, type = type)
             type?.let {
-                Box(modifier = Modifier.align(Alignment.BottomStart).padding(6.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.primary.copy(0.9f)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                    Text(it, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Box(modifier = Modifier.align(Alignment.BottomStart).padding(6.dp)) {
+                    ComicCategoryBadge(type = it)
                 }
             }
         }
@@ -334,7 +328,15 @@ fun PopularRow(comics: List<HomeComicItem>, isHd: Boolean, onComicClick: (String
             key = { it.url ?: it.title },
             contentType = { "popular_item" },
         ) { comic ->
-            Box(Modifier.width(160.dp).animateItem()) {
+            Box(
+                Modifier
+                    .width(160.dp)
+                    .animateItem(
+                        fadeInSpec = NoirMotion.Effects.Float,
+                        fadeOutSpec = NoirMotion.Effects.Float,
+                        placementSpec = NoirMotion.Spatial.asOffset,
+                    ),
+            ) {
                 HomeComicCard(
                     comic.title,
                     getImageUrl(comic.cover, isHd),
@@ -356,10 +358,10 @@ fun LatestGrid(comics: List<HomeComicItem>, onComicClick: (String) -> Unit, colu
     }
     val rows = remember(comics, columns) { comics.chunked(columns) }
     Column {
-        rows.forEach { row ->
+        rows.forEachIndexed { rIdx, row ->
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { comic ->
-                    Box(Modifier.weight(1f).staggeredEntrance(0, entranceDone)) {
+                row.forEachIndexed { cIdx, comic ->
+                    Box(Modifier.weight(1f).staggeredEntrance(rIdx * columns + cIdx, entranceDone, comic.url)) {
                         HomeComicCard(
                             comic.title,
                             getImageUrl(comic.cover, isHd),
@@ -393,18 +395,13 @@ fun androidx.compose.foundation.lazy.LazyListScope.homeComicGridItems(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .animateItem(fadeInSpec = NoirMotion.Effects.Float, fadeOutSpec = NoirMotion.Effects.Float, placementSpec = NoirMotion.Spatial.asOffset)
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             row.forEach { comic ->
                 Box(Modifier.weight(1f)) {
-                    HomeComicCard(
-                        comic.title,
-                        getImageUrl(comic.cover, isHd),
-                        comic.type,
-                        comic.latestChapter,
-                        sharedKey = "cover-${comic.id}",
-                    ) { onComicClick(comic.id) }
+                    HomeComicCard(comic.title, getImageUrl(comic.cover, isHd), comic.type, comic.latestChapter, sharedKey = "cover-${comic.id}") { onComicClick(comic.id) }
                 }
             }
             if (row.size < columns) repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
@@ -432,7 +429,7 @@ fun LayoutAndHdRow(isHd: Boolean, onToggleHd: () -> Unit, columns: Int, onColumn
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (expanded) {
+        NoirAnimatedVisibility(visible = expanded, slideDistance = 16.dp) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 FilterChip(
                     selected = isHd,
@@ -454,11 +451,10 @@ fun LayoutAndHdRow(isHd: Boolean, onToggleHd: () -> Unit, columns: Int, onColumn
                     }
                     Icon(icon, contentDescription = stringResource(R.string.common_change_grid))
                 }
-            }
-            onViewAll?.let {
-                Spacer(Modifier.width(6.dp))
-                TextButton(contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), onClick = it) {
-                    Text(stringResource(R.string.common_view_all), style = MaterialTheme.typography.labelMedium)
+                onViewAll?.let {
+                    TextButton(contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp), onClick = it) {
+                        Text(stringResource(R.string.common_view_all), style = MaterialTheme.typography.labelMedium)
+                    }
                 }
             }
         }

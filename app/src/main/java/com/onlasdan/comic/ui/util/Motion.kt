@@ -45,182 +45,82 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Noir Physics — bahasa gerak 100% fisika pegas (lihat MOTION.md).
+ * Token fisika spasial dengan factory generik untuk varian Float, Dp, dan IntOffset.
+ * Mencegah copy-paste literal nilai dampingRatio dan stiffness di banyak tempat.
+ */
+class SpatialToken(val dampingRatio: Float, val stiffness: Float) {
+    val asFloat: SpringSpec<Float> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+    val asDp: SpringSpec<androidx.compose.ui.unit.Dp> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+    val asOffset: SpringSpec<IntOffset> = spring(dampingRatio = dampingRatio, stiffness = stiffness)
+
+    fun <T> spec(visibilityThreshold: T? = null): SpringSpec<T> = spring(dampingRatio = dampingRatio, stiffness = stiffness, visibilityThreshold = visibilityThreshold)
+}
+
+/**
+ * Noir Physics — sistem token gerak 100% fisika pegas (lihat MOTION.md).
  * Zero tween, zero milidetik di dalam token.
  */
 object NoirMotion {
-    /**
-     * PENTING: semua spec adalah singleton yang stabil. Jangan membuat instance
-     * baru per recomposition — spec dipakai sebagai key LaunchedEffect, instance
-     * baru tiap frame me-restart animasi terus-menerus (bug 2026-10-19).
-     */
-    private val _spatialFloat: SpringSpec<Float> =
-        spring(dampingRatio = 0.8f, stiffness = 800f)
-    private val _spatialDp: SpringSpec<androidx.compose.ui.unit.Dp> =
-        spring(dampingRatio = 0.8f, stiffness = 800f)
-    private val _spatialOffset: SpringSpec<IntOffset> =
-        spring(dampingRatio = 0.8f, stiffness = 800f)
-    private val _effectsFloat: SpringSpec<Float> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 1000f)
-    private val _effectsColor: SpringSpec<Color> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 1000f)
+    // ── 1. Spatial Tokens ──────────────────────────────────────────────
+    val Spatial = SpatialToken(dampingRatio = 0.8f, stiffness = 800f)
+    val SpatialFast = SpatialToken(dampingRatio = 0.72f, stiffness = 900f)
+    val SpatialMedium = SpatialToken(dampingRatio = 0.75f, stiffness = 550f)
+    val SpatialHeavy = SpatialToken(dampingRatio = 0.82f, stiffness = 380f)
+
+    // ── 2. Effects Tokens (NoBouncy) ───────────────────────────────────
+    object Effects {
+        val Float: SpringSpec<Float> = spring(Spring.DampingRatioNoBouncy, 1000f)
+        val Color: SpringSpec<androidx.compose.ui.graphics.Color> = spring(Spring.DampingRatioNoBouncy, 1000f)
+        val Fast: SpringSpec<Float> = spring(Spring.DampingRatioNoBouncy, 1200f)
+        val Dismiss: SpringSpec<Float> = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = 1500f,
+            visibilityThreshold = 4f,
+        )
+
+        fun <T> spec(
+            stiffness: Float = 1000f,
+            visibilityThreshold: T? = null,
+        ): SpringSpec<T> = spring(Spring.DampingRatioNoBouncy, stiffness, visibilityThreshold)
+    }
+
+    // ── 3. Press Tokens ───────────────────────────────────────────────
+    object Press {
+        val Float: SpringSpec<Float> = spring(0.8f, 1200f)
+        fun <T> spec(visibilityThreshold: T? = null): SpringSpec<T> = spring(0.8f, 1200f, visibilityThreshold)
+    }
+
+    // ── 4. Ambient Tokens ─────────────────────────────────────────────
+    object Ambient {
+        val Shimmer: SpringSpec<Float> = spring(0.8f, 60f)
+        val Breathe: SpringSpec<Float> = spring(0.8f, 50f)
+    }
+
+    // ── 5. Khusus: Pill Dock Transitions ──────────────────────────────
+    object Pill {
+        val Throw: SpringSpec<Float> = spring(0.72f, 500f)
+        val Drop: SpringSpec<Float> = spring(1.0f, 700f)
+    }
+
+    // ── Reduced Motion Override (bukan token umum) ────────────────────
     private val _stiffFloat: SpringSpec<Float> =
         spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 4000f)
     private val _stiffColor: SpringSpec<Color> =
         spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 4000f)
-    private val _pressFloat: SpringSpec<Float> =
-        spring(dampingRatio = 0.8f, stiffness = 1200f)
 
-    /**
-     * Pill show: "dilempar dari bawah" — momentum lemparan (spec user 2026-10-19).
-     * Pill hide: "jatuh" — drop tanpa pantulan.
-     */
-    private val _pillShowFloat: SpringSpec<Float> =
-        spring(dampingRatio = 0.78f, stiffness = 600f)
-    private val _pillHideFloat: SpringSpec<Float> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 800f)
-
-    /**
-     * Effects cepat untuk tint ikon (spec user 2026-10-19).
-     */
-    private val _effectsFastFloat: SpringSpec<Float> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 1200f)
-    private val _effectsFastColor: SpringSpec<Color> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 1200f)
-    private val _shimmerFloat: SpringSpec<Float> =
-        spring(dampingRatio = 0.8f, stiffness = 60f)
-
-    /**
-     * Breathing/pulse untuk skeleton slot halaman reader: sangat lambat,
-     * nyaris seperti napas. Singleton stabil (lihat peringatan di atas).
-     */
-    private val _breatheFloat: SpringSpec<Float> =
-        spring(dampingRatio = 0.8f, stiffness = 50f)
-    // ------------------------------------------------------------------
-    // Token generasi 2026-10-19 (spec "rasakan animasinya"): underdamped agar
-    // ayunan pegas KASAT MATA, stiffness lebih rendah agar terbaca berbobot.
-    // ------------------------------------------------------------------
-
-    /** Tombol, chip, tactile press, icon scale: membal, hidup, responsif. */
-    private val _noirSpatialFast: SpringSpec<Float> =
-        spring(dampingRatio = 0.72f, stiffness = 900f)
-
-    /** Indikator pill, lemparan dock, card entrance: berbobot + overshoot jelas. */
-    private val _noirSpatialMedium: SpringSpec<Float> =
-        spring(dampingRatio = 0.75f, stiffness = 550f)
-
-    /** Transisi antar layar & ekspansi besar: berat, mewah, punya massa. */
-    private val _noirSpatialHeavy: SpringSpec<Float> =
-        spring(dampingRatio = 0.82f, stiffness = 380f)
-
-    /** Semua perubahan warna & alpha: mulus tanpa kedip. */
-    private val _noirEffects: SpringSpec<Float> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 800f)
-    private val _noirEffectsColor: SpringSpec<Color> =
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = 800f)
-
-    /** Pill muncul: dilempar dari bawah dengan momentum. */
-    private val _pillThrowFloat: SpringSpec<Float> =
-        spring(dampingRatio = 0.72f, stiffness = 500f)
-
-    /** Pill sembunyi: jatuh ditarik gravitasi. */
-    private val _pillDropFloat: SpringSpec<Float> =
-        spring(dampingRatio = 1f, stiffness = 700f)
-
-    /** Varian IntOffset dari noirSpatialHeavy untuk slide transisi layar. */
-    private val _noirSpatialHeavyOffset: SpringSpec<IntOffset> =
-        spring(dampingRatio = 0.82f, stiffness = 380f)
-
-    /**
-     * Spatial spring (posisi, ukuran, scale, bentuk): slightly underdamped —
-     * satu ayunan rem magnetik yang sangat halus di akhir gerakan.
-     */
-    fun spatialSpring(): SpringSpec<Float> = _spatialFloat
-
-    fun spatialSpringDp(): SpringSpec<androidx.compose.ui.unit.Dp> = _spatialDp
-
-    fun spatialSpringOffset(): SpringSpec<IntOffset> = _spatialOffset
-
-    /**
-     * Effects spring (alpha/opacity & warna): wajib NoBouncy agar mulus
-     * tanpa kedip.
-     */
-    fun effectsSpring(): SpringSpec<Float> = _effectsFloat
-
-    fun effectsSpringColor(): SpringSpec<Color> = _effectsColor
-
-    /**
-     * Reduced motion: tetap 100% spring, dikunci ke pegas super kaku tanpa
-     * pantulan. Tanpa snap instan, tanpa crossfade berdurasi ms.
-     */
     fun stiffSpring(): SpringSpec<Float> = _stiffFloat
-
     fun stiffSpringColor(): SpringSpec<Color> = _stiffColor
-
-    /**
-     * Press feedback: elemen kecil bergerak dengan stiffness tinggi
-     * (hukum massa).
-     */
-    fun pressSpring(): SpringSpec<Float> = _pressFloat
-
-    fun pillShowSpring(): SpringSpec<Float> = _pillShowFloat
-
-    fun pillHideSpring(): SpringSpec<Float> = _pillHideFloat
-
-    fun effectsFastSpring(): SpringSpec<Float> = _effectsFastFloat
-
-    fun effectsFastSpringColor(): SpringSpec<Color> = _effectsFastColor
-
-    /**
-     * Shimmer spec singleton stabil agar LaunchedEffect tidak me-restart
-     * animasi per recomposition frame.
-     */
-    fun shimmerSpring(): SpringSpec<Float> = _shimmerFloat
-
-    /**
-     * Breathing spec singleton stabil agar LaunchedEffect tidak me-restart
-     * animasi per recomposition frame.
-     */
-    fun breatheSpring(): SpringSpec<Float> = _breatheFloat
-
-    /** Token 2026-10-19: tactile & elemen kecil (0.72f, 900f). */
-    fun noirSpatialFast(): SpringSpec<Float> = _noirSpatialFast
-
-    /** Token 2026-10-19: bobot menengah + overshoot kasat mata (0.75f, 550f). */
-    fun noirSpatialMedium(): SpringSpec<Float> = _noirSpatialMedium
-
-    /** Token 2026-10-19: transisi berat & mewah (0.82f, 380f). */
-    fun noirSpatialHeavy(): SpringSpec<Float> = _noirSpatialHeavy
-
-    /** Token 2026-10-19: warna & alpha (NoBouncy, 800f). */
-    fun noirEffects(): SpringSpec<Float> = _noirEffects
-
-    /** Varian Color dari noirEffects untuk animateNoirColorAsState. */
-    fun noirEffectsColor(): SpringSpec<Color> = _noirEffectsColor
-
-    /** Pill dock muncul: dilempar dari bawah (0.72f, 500f). */
-    fun pillThrowSpring(): SpringSpec<Float> = _pillThrowFloat
-
-    /** Pill dock sembunyi: jatuh gravitasi (1.0f, 700f). */
-    fun pillDropSpring(): SpringSpec<Float> = _pillDropFloat
-
-    /** Varian IntOffset noirSpatialHeavy untuk slideIn/Out transisi layar. */
-    fun noirSpatialHeavyOffset(): SpringSpec<IntOffset> = _noirSpatialHeavyOffset
 }
 
 /**
- * Legacy alias — dipertahankan agar file lama tetap kompilasi selama migrasi.
- * JANGAN dipakai di kode baru; pakai [NoirMotion].
+ * Legacy tokens — dipertahankan untuk konstanta stagger.
  */
 object MotionTokens {
     /** Langkah stagger antar item (sequencing, bukan durasi animasi). */
-    const val StaggerStepMs = 40L
+    const val StaggerStepMs = 60L
 
     /** Stagger hanya untuk beberapa item pertama. */
     const val StaggerCap = 8
-
-    fun pressSpring() = NoirMotion.pressSpring()
-    fun gentleSpring() = NoirMotion.spatialSpring()
 }
 
 /**
@@ -259,7 +159,7 @@ fun rememberReducedMotion(): Boolean {
 @Composable
 fun animateNoirFloatAsState(
     targetValue: Float,
-    animationSpec: AnimationSpec<Float> = NoirMotion.spatialSpring(),
+    animationSpec: AnimationSpec<Float> = NoirMotion.Spatial.asFloat,
     label: String = "NoirFloatAnimation",
 ): State<Float> {
     val animatable = remember { Animatable(targetValue) }
@@ -275,7 +175,7 @@ fun animateNoirFloatAsState(
 @Composable
 fun animateNoirDpAsState(
     targetValue: androidx.compose.ui.unit.Dp,
-    animationSpec: AnimationSpec<androidx.compose.ui.unit.Dp> = NoirMotion.spatialSpringDp(),
+    animationSpec: AnimationSpec<androidx.compose.ui.unit.Dp> = NoirMotion.Spatial.asDp,
     label: String = "NoirDpAnimation",
 ): State<androidx.compose.ui.unit.Dp> {
     val animatable = remember {
@@ -299,7 +199,7 @@ private val NoirColorConverter = TwoWayConverter<Color, AnimationVector4D>(
 @Composable
 fun animateNoirColorAsState(
     targetValue: Color,
-    animationSpec: AnimationSpec<Color> = NoirMotion.effectsSpringColor(),
+    animationSpec: AnimationSpec<Color> = NoirMotion.Effects.Color,
     label: String = "NoirColorAnimation",
 ): State<Color> {
     val animatable = remember<Animatable<Color, AnimationVector4D>> {
@@ -394,7 +294,7 @@ private class PressScaleNode(
                         is PressInteraction.Release, is PressInteraction.Cancel -> isPressed = false
                     }
                     val target = if (isPressed) pressedScale else 1f
-                    scaleAnim.animateTo(target, NoirMotion.noirSpatialFast())
+                    scaleAnim.animateTo(target, NoirMotion.Press.Float)
                 }
             }
         }
@@ -421,39 +321,8 @@ private class PressScaleNode(
 fun Modifier.staggeredEntrance(
     index: Int,
     entranceDone: Boolean,
-): Modifier = composed {
-    if (entranceDone) return@composed this
-    val reducedMotion = rememberReducedMotion()
-
-    var visible by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(index.coerceAtMost(MotionTokens.StaggerCap) * MotionTokens.StaggerStepMs)
-        visible = true
-    }
-    val alphaSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.noirEffects()
-    val moveSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.noirSpatialMedium()
-    val alpha by animateNoirFloatAsState(
-        targetValue = if (visible) 1f else 0f,
-        animationSpec = alphaSpec,
-        label = "staggerAlpha",
-    )
-    val rise by animateNoirFloatAsState(
-        targetValue = if (visible) 0f else 60f,
-        animationSpec = moveSpec,
-        label = "staggerRise",
-    )
-    val scale by animateNoirFloatAsState(
-        targetValue = if (visible) 1f else 0.92f,
-        animationSpec = moveSpec,
-        label = "staggerScale",
-    )
-    graphicsLayer {
-        this.alpha = alpha
-        translationY = rise
-        scaleX = scale
-        scaleY = scale
-    }
-}
+    triggerKey: Any? = Unit,
+): Modifier = comicCardHalftoneEntrance(index = index, entranceDone = entranceDone, triggerKey = triggerKey)
 
 /**
  * Pengganti AnimatedVisibility bawaan yang mati saat system 0x.
@@ -465,8 +334,8 @@ fun NoirAnimatedVisibility(
     visible: Boolean,
     modifier: Modifier = Modifier,
     slideDistance: androidx.compose.ui.unit.Dp = 28.dp,
-    enterSpec: AnimationSpec<Float> = NoirMotion.pillThrowSpring(),
-    exitSpec: AnimationSpec<Float> = NoirMotion.pillDropSpring(),
+    enterSpec: AnimationSpec<Float> = NoirMotion.Pill.Throw,
+    exitSpec: AnimationSpec<Float> = NoirMotion.Pill.Drop,
     content: @Composable () -> Unit,
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -478,10 +347,10 @@ fun NoirAnimatedVisibility(
         withContext(NoirForceMotionScale) {
             if (visible) {
                 render = true
-                launch { alpha.animateTo(1f, NoirMotion.noirEffects()) }
+                launch { alpha.animateTo(1f, NoirMotion.Effects.Float) }
                 offset.animateTo(0f, enterSpec)
             } else {
-                launch { alpha.animateTo(0f, NoirMotion.noirEffects()) }
+                launch { alpha.animateTo(0f, NoirMotion.Effects.Float) }
                 offset.animateTo(slidePx, exitSpec)
                 render = false
             }
@@ -493,9 +362,7 @@ fun NoirAnimatedVisibility(
                 this.alpha = alpha.value
                 translationY = offset.value
             },
-        ) {
-            content()
-        }
+        ) { content() }
     }
 }
 

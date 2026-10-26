@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -186,7 +187,7 @@ private fun SeriesInfoRow(
     }
 }
 
-/** Skeleton header saat loading — FIXED seperti header aslinya. */
+/** Skeleton header saat loading — meniru DetailInfoSection (cover + metadata + aksi + sinopsis). */
 @Composable
 internal fun DetailHeaderPlaceholder(modifier: Modifier = Modifier) = ShimmerScope { DetailHeaderPlaceholderContent(modifier) }
 
@@ -198,44 +199,65 @@ internal fun DetailHeaderPlaceholderContent(modifier: Modifier = Modifier) {
             .padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-        ) {
-            ShimmerBox(
-                modifier = Modifier
-                    .width(110.dp)
-                    .aspectRatio(2f / 3f),
-                shape = CardShape,
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                ShimmerBox(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp),
-                    shape = RoundedCornerShape(4.dp),
-                )
-                ShimmerBox(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(14.dp),
-                    shape = RoundedCornerShape(4.dp),
-                )
-                ShimmerBox(
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .height(14.dp),
-                    shape = RoundedCornerShape(4.dp),
-                )
+        DetailHeaderCoverAndMetaSkeleton()
+        DetailHeaderActionRowSkeleton()
+        DetailHeaderSynopsisSkeleton()
+    }
+}
+
+@Composable
+private fun DetailHeaderCoverAndMetaSkeleton() {
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        ShimmerBox(modifier = Modifier.width(110.dp).aspectRatio(2f / 3f), shape = CardShape)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            ShimmerBox(modifier = Modifier.fillMaxWidth(0.92f).height(20.dp), shape = RoundedCornerShape(4.dp))
+            ShimmerBox(modifier = Modifier.fillMaxWidth(0.55f).height(14.dp), shape = RoundedCornerShape(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                ChipPlaceholder(width = 56.dp)
+                ChipPlaceholder(width = 64.dp)
             }
         }
+    }
+}
+
+@Composable
+private fun DetailHeaderActionRowSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ShimmerBox(
+            modifier = Modifier
+                .weight(1f)
+                .height(48.dp),
+            shape = ButtonShape,
+        )
+        ShimmerBox(modifier = Modifier.size(48.dp), shape = CircleShape)
+        ShimmerBox(modifier = Modifier.size(48.dp), shape = CircleShape)
+    }
+}
+
+@Composable
+private fun DetailHeaderSynopsisSkeleton() {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         ShimmerBox(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
-            shape = ButtonShape,
+                .height(13.dp),
+            shape = RoundedCornerShape(4.dp),
+        )
+        ShimmerBox(
+            modifier = Modifier
+                .fillMaxWidth(0.88f)
+                .height(13.dp),
+            shape = RoundedCornerShape(4.dp),
+        )
+        ShimmerBox(
+            modifier = Modifier
+                .fillMaxWidth(0.62f)
+                .height(13.dp),
+            shape = RoundedCornerShape(4.dp),
         )
     }
 }

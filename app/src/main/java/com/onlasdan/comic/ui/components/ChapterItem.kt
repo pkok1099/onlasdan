@@ -53,7 +53,7 @@ fun ChapterRowItem(
     onDownloadPdf: ((Chapter) -> Unit)? = null,
 ) {
     val titleColor = if (isRead) TextSecondary else TextPrimary
-    val checkmarkTint = AccentPink
+    val checkmarkTint = ComicVibrantColors.AuraMint
     val rowContext = LocalContext.current
     // Unduhan pertama meminta izin notifikasi (hasil unduhan tampil sebagai
     // notifikasi sejak backlog #1); unduhan tetap jalan apa pun jawabannya.

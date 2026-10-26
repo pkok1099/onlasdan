@@ -2,7 +2,6 @@ package com.onlasdan.comic.ui.components
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -54,7 +53,7 @@ import kotlinx.coroutines.withContext
  * - Tinggi: wrapContentHeight() dengan batas maksimum (tanpa space kosong di bawah).
  * - Sudut: RoundedCornerShape(28.dp) di keempat sudut.
  * - Animasi: Mekar dari titik tombol Pill Dock (scaleX 0.2f->1f, scaleY 0.1f->1f, translationY 80f->0f)
- *   menggunakan NoirSpatialHeavy (spring dampingRatio = 0.78f, stiffness = 420f).
+ *   menggunakan NoirSpatialHeavy (spring dampingRatio = 0.82f, stiffness = 380f).
  */
 @Composable
 fun NoirMorphingSheet(
@@ -75,17 +74,17 @@ fun NoirMorphingSheet(
         withContext(NoirForceMotionScale) {
             if (visible) {
                 isRendered = true
-                launch { alphaAnim.animateTo(1f, NoirMotion.noirEffects()) }
+                launch { alphaAnim.animateTo(1f, NoirMotion.Effects.Float) }
                 animProgress.animateTo(
                     targetValue = 1f,
-                    animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                    animationSpec = NoirMotion.SpatialHeavy.asFloat,
                 )
             } else {
-                launch { dragOffsetY.animateTo(0f, NoirMotion.noirSpatialFast()) }
-                launch { alphaAnim.animateTo(0f, NoirMotion.noirEffects()) }
+                launch { dragOffsetY.animateTo(0f, NoirMotion.SpatialFast.asFloat) }
+                launch { alphaAnim.animateTo(0f, NoirMotion.Effects.Float) }
                 animProgress.animateTo(
                     targetValue = 0f,
-                    animationSpec = spring(dampingRatio = 0.78f, stiffness = 420f),
+                    animationSpec = NoirMotion.SpatialHeavy.asFloat,
                 )
                 isRendered = false
             }
@@ -164,7 +163,7 @@ fun NoirMorphingSheet(
                                 } else {
                                     scope.launch {
                                         withContext(NoirForceMotionScale) {
-                                            dragOffsetY.animateTo(0f, NoirMotion.noirSpatialFast())
+                                            dragOffsetY.animateTo(0f, NoirMotion.SpatialFast.asFloat)
                                         }
                                     }
                                 }

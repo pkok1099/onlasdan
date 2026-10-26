@@ -56,6 +56,7 @@ import com.onlasdan.comic.ui.chrome.ComicSearchSheetContent
 import com.onlasdan.comic.ui.chrome.LocalChromeContext
 import com.onlasdan.comic.ui.chrome.UnifiedMorphingDock
 import com.onlasdan.comic.ui.components.*
+import com.onlasdan.comic.ui.components.pulltorefresh.ElasticNoirAmbientBackdrop
 import com.onlasdan.comic.ui.screens.*
 import com.onlasdan.comic.ui.screens.browse.BrowseScreen
 import com.onlasdan.comic.ui.screens.sourcebrowse.SourceBrowseScreen
@@ -64,9 +65,7 @@ import com.onlasdan.comic.ui.source.SourceRegistry
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.BackupSummary
 import com.onlasdan.comic.ui.util.DatabaseBackupStore
-import com.onlasdan.comic.ui.util.MotionTokens
 import com.onlasdan.comic.ui.util.NoirMotion
-import com.onlasdan.comic.ui.util.animateNoirFloatAsState
 import com.onlasdan.comic.ui.util.chapterSlugOf
 import com.onlasdan.comic.ui.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -270,6 +269,9 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
                 val currentSourceObj = remember(selectedSource) { SourceRegistry.get(selectedSource) }
 
                 Box(modifier = Modifier.fillMaxSize()) {
+                    if (!isReaderDestination) {
+                        com.onlasdan.comic.ui.theme.ComicMangaAmbientBackdrop(origin = selectedSource)
+                    }
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Top bar on Home & main screens
                         if (shouldShowChrome && !isReaderDestination && currentDestination?.route == "home") {
@@ -281,6 +283,7 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                ElasticNoirBrandHeader()
                                 SourceSwitcherTrigger(
                                     currentSource = currentSourceObj,
                                     onClick = { showSourceSwitcherSheet = true },
@@ -325,38 +328,24 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
                                     startDestination = "home",
                                     modifier = contentModifier,
                                     enterTransition = {
-                                        // Depth transition: layar baru muncul dari depan dengan
-                                        // bobot (scale + slide vertikal + fade), pegas berat.
-                                        fadeIn(NoirMotion.noirEffects()) +
-                                            scaleIn(
-                                                NoirMotion.noirSpatialHeavy(),
-                                                initialScale = 0.92f,
-                                            ) +
-                                            slideInVertically(NoirMotion.noirSpatialHeavyOffset()) { it / 6 }
+                                        fadeIn(NoirMotion.Effects.Fast) +
+                                            scaleIn(NoirMotion.SpatialFast.asFloat, initialScale = 0.90f) +
+                                            slideInVertically(NoirMotion.SpatialFast.asOffset) { it / 7 }
                                     },
                                     exitTransition = {
-                                        // Layar lama tenggelam ke belakang: mengecil + meredup.
-                                        scaleOut(
-                                            NoirMotion.noirSpatialHeavy(),
-                                            targetScale = 0.94f,
-                                        ) +
-                                            fadeOut(NoirMotion.noirEffects(), targetAlpha = 0.3f)
+                                        scaleOut(NoirMotion.SpatialFast.asFloat, targetScale = 0.94f) +
+                                            slideOutVertically(NoirMotion.SpatialFast.asOffset) { -it / 10 } +
+                                            fadeOut(NoirMotion.Effects.Fast, targetAlpha = 0.3f)
                                     },
                                     popEnterTransition = {
-                                        fadeIn(NoirMotion.noirEffects()) +
-                                            scaleIn(
-                                                NoirMotion.noirSpatialHeavy(),
-                                                initialScale = 0.94f,
-                                            )
+                                        fadeIn(NoirMotion.Effects.Fast) +
+                                            scaleIn(NoirMotion.SpatialFast.asFloat, initialScale = 0.94f) +
+                                            slideInVertically(NoirMotion.SpatialFast.asOffset) { -it / 8 }
                                     },
                                     popExitTransition = {
-                                        // Layar atas jatuh/mengecil keluar.
-                                        scaleOut(
-                                            NoirMotion.noirSpatialHeavy(),
-                                            targetScale = 0.90f,
-                                        ) +
-                                            slideOutVertically(NoirMotion.noirSpatialHeavyOffset()) { it / 5 } +
-                                            fadeOut(NoirMotion.noirEffects())
+                                        scaleOut(NoirMotion.SpatialFast.asFloat, targetScale = 0.88f) +
+                                            slideOutVertically(NoirMotion.SpatialFast.asOffset) { it / 6 } +
+                                            fadeOut(NoirMotion.Effects.Fast)
                                     },
                                 ) {
                                     composable("home") {

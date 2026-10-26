@@ -49,6 +49,7 @@ import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.DbChangeNotifier
 import com.onlasdan.comic.ui.util.NoirForceMotionScale
 import com.onlasdan.comic.ui.util.NoirMotion
+import com.onlasdan.comic.ui.util.noirClickable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -108,7 +109,7 @@ fun ComicCardMorphingOverlay(
             }
 
             withContext(NoirForceMotionScale) {
-                morphProgress.animateTo(1f, NoirMotion.pillThrowSpring())
+                morphProgress.animateTo(1f, NoirMotion.Pill.Throw)
             }
         }
     }
@@ -125,7 +126,7 @@ fun ComicCardMorphingOverlay(
             scope.launch {
                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                 withContext(NoirForceMotionScale) {
-                    morphProgress.animateTo(0f, NoirMotion.pillDropSpring())
+                    morphProgress.animateTo(0f, NoirMotion.Pill.Drop)
                 }
                 onDismiss()
                 activeTarget = null
@@ -449,7 +450,7 @@ private fun MorphingVerticalButton(
         shape = RoundedCornerShape(10.dp),
         color = containerColor,
         border = BorderStroke(0.9.dp, borderColor),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().noirClickable(pressedScale = 0.95f, onClick = onClick),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),

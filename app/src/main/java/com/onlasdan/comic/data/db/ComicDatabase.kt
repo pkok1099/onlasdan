@@ -85,6 +85,7 @@ abstract class ComicDatabase : RoomDatabase() {
         @Volatile
         private var instance: ComicDatabase? = null
 
+        @OptIn(androidx.room.ExperimentalRoomApi::class)
         fun get(context: Context): ComicDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext,
@@ -93,6 +94,7 @@ abstract class ComicDatabase : RoomDatabase() {
             )
                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .fallbackToDestructiveMigrationOnDowngrade()
+                .setInMemoryTrackingMode(false)
                 .build()
                 .also { instance = it }
         }

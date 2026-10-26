@@ -16,6 +16,9 @@ val FullSheetShape = RoundedCornerShape(SheetCornerRadius)
 val ChipShape = RoundedCornerShape(ChipCornerRadius)
 val ButtonShape = RoundedCornerShape(ButtonCornerRadius)
 val SmallButtonShape = RoundedCornerShape(SmallButtonCornerRadius)
+val ComicStampShape = RoundedCornerShape(6.dp)
+val ComicBurstBubbleShape = RoundedCornerShape(18.dp)
+val PillShape = RoundedCornerShape(percent = 50)
 
 val NoirShapes = Shapes(
     extraSmall = RoundedCornerShape(6.dp),

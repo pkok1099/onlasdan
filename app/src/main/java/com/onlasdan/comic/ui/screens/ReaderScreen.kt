@@ -31,6 +31,7 @@ import com.onlasdan.comic.ui.components.ReaderCanvasPlaceholder
 import com.onlasdan.comic.ui.screens.reader.ReaderContent
 import com.onlasdan.comic.ui.screens.reader.ReaderExpandedTab
 import com.onlasdan.comic.ui.source.SourceRegistry
+import com.onlasdan.comic.ui.util.ImageIntegrityValidator
 import com.onlasdan.comic.ui.util.NoirForceMotionScale
 import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.rememberSelectedSource
@@ -95,9 +96,9 @@ fun ReaderScreen(
     LaunchedEffect(activeExpandedTab) {
         withContext(NoirForceMotionScale) {
             if (activeExpandedTab != null) {
-                sheetProgress.animateTo(1f, NoirMotion.noirSpatialHeavy())
+                sheetProgress.animateTo(1f, NoirMotion.SpatialHeavy.asFloat)
             } else {
-                sheetProgress.animateTo(0f, NoirMotion.noirSpatialHeavy())
+                sheetProgress.animateTo(0f, NoirMotion.SpatialHeavy.asFloat)
             }
         }
     }
@@ -260,7 +261,11 @@ fun ReaderScreen(
                 val downloadedPages = withContext(Dispatchers.IO) {
                     db.downloadDao().getDownloadedPages(slug, source.lowercase().trim(), chapterSlug)
                 }
-                if (downloadedPages.isNotEmpty() && downloadedPages.all { File(it.localFilePath).exists() }) {
+                if (downloadedPages.isNotEmpty() && downloadedPages.all {
+                        val f = File(it.localFilePath)
+                        f.exists() && ImageIntegrityValidator.isComplete(f)
+                    }
+                ) {
                     downloadedPages.sortedBy { it.pageIndex }.map { "file://${it.localFilePath}" }
                 } else {
                     SourceRegistry.get(source).pages("$slug:$chapterSlug").map { it.imageUrl }

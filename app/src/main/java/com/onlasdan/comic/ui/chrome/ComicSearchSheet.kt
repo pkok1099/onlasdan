@@ -1,6 +1,5 @@
 package com.onlasdan.comic.ui.chrome
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -35,7 +34,8 @@ import com.onlasdan.comic.ui.source.CombinedSearchResult
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.source.SourceRegistry
 import com.onlasdan.comic.ui.theme.*
-import com.onlasdan.comic.ui.util.pressScale
+import com.onlasdan.comic.ui.util.NoirMotion
+import com.onlasdan.comic.ui.util.noirClickable
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -369,7 +369,7 @@ fun ComicSearchSheetContent(
         ) {
             if (isLoading) {
                 item {
-                    PlaceholderRow()
+                    PlaceholderGrid(rows = 2)
                 }
             }
 
@@ -386,12 +386,15 @@ fun ComicSearchSheetContent(
                     key = { "local_${it.source}_${it.slug}" },
                     contentType = { "search_local_item" },
                 ) { item ->
-                    val interactionSource = remember { MutableInteractionSource() }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .pressScale(interactionSource)
-                            .clickable(interactionSource = interactionSource, indication = null) {
+                            .animateItem(
+                                fadeInSpec = NoirMotion.Effects.Float,
+                                fadeOutSpec = NoirMotion.Effects.Float,
+                                placementSpec = NoirMotion.Spatial.asOffset,
+                            )
+                            .noirClickable(pressedScale = 0.96f) {
                                 onDismiss()
                                 onSelectComic(item.slug, item.source)
                             }

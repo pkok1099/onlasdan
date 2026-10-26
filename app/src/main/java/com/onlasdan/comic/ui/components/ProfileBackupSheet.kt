@@ -6,7 +6,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -294,7 +293,7 @@ fun ProfileBackupSheetContent(
                                             .size(32.dp)
                                             .clip(RoundedCornerShape(8.dp))
                                             .background(if (isSelected) PrimaryPink else DarkSurface)
-                                            .clickable { chromeContext.setColumns.invoke(col) },
+                                            .noirClickable(pressedScale = 0.90f) { chromeContext.setColumns.invoke(col) },
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
@@ -541,7 +540,7 @@ private fun ProfileNavItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .clickable(onClick = onClick)
+            .noirClickable(pressedScale = 0.96f) { onClick() }
             .padding(horizontal = Spacing.sm, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,

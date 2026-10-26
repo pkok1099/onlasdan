@@ -38,6 +38,7 @@ import com.onlasdan.comic.ui.source.AppErrorHandler
 import com.onlasdan.comic.ui.source.Genre
 import com.onlasdan.comic.ui.source.SourceRegistry
 import com.onlasdan.comic.ui.theme.*
+import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.pressScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -239,10 +240,9 @@ fun GenreBrowserSheetContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
-                        .padding(Spacing.lg),
+                        .weight(1f),
                 ) {
-                    PlaceholderGrid()
+                    GenreBrowserPlaceholder()
                 }
             }
 
@@ -305,6 +305,11 @@ fun GenreBrowserSheetContent(
                     ) { genre ->
                         GenreBrowserCard(
                             genre = genre,
+                            modifier = Modifier.animateItem(
+                                fadeInSpec = NoirMotion.Effects.Float,
+                                fadeOutSpec = NoirMotion.Effects.Float,
+                                placementSpec = NoirMotion.Spatial.asOffset,
+                            ),
                             onClick = {
                                 focusManager.clearFocus()
                                 onDismiss()

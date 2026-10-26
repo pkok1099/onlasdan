@@ -4,7 +4,6 @@ import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +26,7 @@ import androidx.compose.ui.zIndex
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.NoirForceMotionScale
 import com.onlasdan.comic.ui.util.NoirMotion
+import com.onlasdan.comic.ui.util.noirClickable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -116,13 +116,13 @@ fun NoirToastHost(
             view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
             val job = launch {
                 withContext(NoirForceMotionScale) {
-                    launch { alpha.animateTo(1f, NoirMotion.effectsFastSpring()) }
-                    offsetY.animateTo(0f, NoirMotion.pillThrowSpring())
+                    launch { alpha.animateTo(1f, NoirMotion.Effects.Fast) }
+                    offsetY.animateTo(0f, NoirMotion.Pill.Throw)
                 }
                 delay(if (current.actionLabel != null) 5000L else 2600L)
                 withContext(NoirForceMotionScale) {
-                    launch { alpha.animateTo(0f, NoirMotion.effectsFastSpring()) }
-                    offsetY.animateTo(-slidePx, NoirMotion.pillDropSpring())
+                    launch { alpha.animateTo(0f, NoirMotion.Effects.Fast) }
+                    offsetY.animateTo(-slidePx, NoirMotion.Pill.Drop)
                 }
                 AppToast.dismiss()
                 displayedToast = null
@@ -130,8 +130,8 @@ fun NoirToastHost(
             AppToast.setDismissJob(job)
         } else {
             withContext(NoirForceMotionScale) {
-                launch { alpha.animateTo(0f, NoirMotion.effectsFastSpring()) }
-                offsetY.animateTo(-slidePx, NoirMotion.pillDropSpring())
+                launch { alpha.animateTo(0f, NoirMotion.Effects.Fast) }
+                offsetY.animateTo(-slidePx, NoirMotion.Pill.Drop)
             }
             displayedToast = null
         }
@@ -140,9 +140,9 @@ fun NoirToastHost(
     val activeMsg = displayedToast
     if (activeMsg != null && alpha.value > 0.005f) {
         val accentColor = when {
-            activeMsg.isError -> ErrorRed
-            activeMsg.isSuccess -> SuccessGreen
-            else -> PrimaryPink
+            activeMsg.isError -> ComicVibrantColors.ManhuaCrimson
+            activeMsg.isSuccess -> ComicVibrantColors.AuraMint
+            else -> ComicVibrantColors.ComicPink
         }
 
         Box(
@@ -175,7 +175,7 @@ private fun ToastActionLabel(label: String, color: Color, onClick: () -> Unit) {
         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
         color = color,
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .noirClickable(pressedScale = 0.92f) { onClick() }
             .padding(horizontal = 6.dp, vertical = 4.dp),
     )
 }

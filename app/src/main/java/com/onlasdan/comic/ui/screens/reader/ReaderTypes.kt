@@ -251,3 +251,11 @@ fun buildContinuousItems(
     }
     return result
 }
+
+fun calculatePrefetchRange(lastVisible: Int, totalItems: Int, prefetchCount: Int = 8): IntRange? {
+    if (lastVisible < 0 || totalItems <= 0) return null
+    val start = lastVisible + 1
+    if (start >= totalItems) return null
+    val end = minOf(lastVisible + prefetchCount, totalItems - 1)
+    return start..end
+}

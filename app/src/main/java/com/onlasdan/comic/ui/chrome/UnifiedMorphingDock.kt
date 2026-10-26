@@ -4,10 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -77,6 +75,7 @@ import com.onlasdan.comic.ui.util.NoirForceMotionScale
 import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.animateNoirColorAsState
 import com.onlasdan.comic.ui.util.animateNoirFloatAsState
+import com.onlasdan.comic.ui.util.noirClickable
 import com.onlasdan.comic.ui.util.rememberReducedMotion
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -158,7 +157,7 @@ fun UnifiedMorphingDock(
     )
 
     val imeOffsetAnim = remember { Animatable(0f) }
-    val imeSpringSpec = spring<Float>(dampingRatio = 0.85f, stiffness = 400f)
+    val imeSpringSpec = NoirMotion.SpatialHeavy.asFloat
 
     LaunchedEffect(rawImeOffset) {
         withContext(NoirForceMotionScale) {
@@ -203,20 +202,20 @@ fun UnifiedMorphingDock(
     val activeTabToRender = expandedTabIndex ?: lastActiveTabIndex
 
     // ── Pill throw/drop animation (show/hide the whole dock) ────────────
-    val throwSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.pillThrowSpring()
-    val dropSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.pillDropSpring()
+    val throwSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.Pill.Throw
+    val dropSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.Pill.Drop
     val pillY = remember { Animatable(160f) }
     val pillScale = remember { Animatable(0.9f) }
     val pillAlpha = remember { Animatable(0f) }
     LaunchedEffect(visible) {
         withContext(NoirForceMotionScale) {
             if (visible) {
-                launch { pillAlpha.animateTo(1f, NoirMotion.noirEffects()) }
-                launch { pillScale.animateTo(1f, NoirMotion.noirSpatialMedium()) }
+                launch { pillAlpha.animateTo(1f, NoirMotion.Effects.Float) }
+                launch { pillScale.animateTo(1f, NoirMotion.SpatialMedium.asFloat) }
                 pillY.animateTo(0f, throwSpec, initialVelocity = -2200f)
             } else {
-                launch { pillAlpha.animateTo(0f, NoirMotion.noirEffects()) }
-                launch { pillScale.animateTo(0.88f, NoirMotion.noirSpatialFast()) }
+                launch { pillAlpha.animateTo(0f, NoirMotion.Effects.Float) }
+                launch { pillScale.animateTo(0.88f, NoirMotion.SpatialFast.asFloat) }
                 pillY.animateTo(320f, dropSpec, initialVelocity = 1800f)
             }
         }
@@ -224,7 +223,7 @@ fun UnifiedMorphingDock(
 
     // ── Single Source of Truth: sheetProgress (0f..1f) ──────────────────
     var isDragging by remember { mutableStateOf(false) }
-    val heavySpringSpec = spring<Float>(dampingRatio = 0.80f, stiffness = 400f)
+    val heavySpringSpec = NoirMotion.SpatialHeavy.asFloat
 
     LaunchedEffect(expandedTabIndex) {
         if (expandedTabIndex == null) {
@@ -253,7 +252,7 @@ fun UnifiedMorphingDock(
         selectedIndex
     }
 
-    val indicatorSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.noirSpatialMedium()
+    val indicatorSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.SpatialMedium.asFloat
     val indicatorTabFraction = remember { Animatable(selectedIndex.toFloat()) }
 
     LaunchedEffect(effectiveTargetIndex, isDragging) {
@@ -332,10 +331,11 @@ fun UnifiedMorphingDock(
             color = NoirSurface,
             border = BorderStroke(
                 1.dp,
-                Brush.verticalGradient(
+                Brush.horizontalGradient(
                     colors = listOf(
+                        PrimaryPink.copy(alpha = 0.55f),
+                        com.onlasdan.comic.ui.theme.ComicVibrantColors.ManhwaCyan.copy(alpha = 0.45f),
                         PrimaryPink.copy(alpha = 0.35f),
-                        Color.White.copy(alpha = 0.05f),
                     ),
                 ),
             ),
@@ -458,9 +458,11 @@ fun UnifiedMorphingDock(
                             )
                         }
 
-                        // Konten sheet (Search / Genre / Profile)
+                        // Konten sheet (Search / Genre / Profile) dengan animasi transisi antar sheet
                         (activeTabToRender ?: expandedTabIndex ?: lastActiveTabIndex)?.let { tabIndex ->
-                            sheetContent(tabIndex)
+                            MorphingSheetTabTransition(currentTab = tabIndex) { tab ->
+                                sheetContent(tab)
+                            }
                         }
                     }
 
@@ -586,7 +588,7 @@ private fun UnifiedDockIconButton(
     enabled: Boolean = true,
 ) {
     val reducedMotion = rememberReducedMotion()
-    val popSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.noirSpatialFast()
+    val popSpec = if (reducedMotion) NoirMotion.stiffSpring() else NoirMotion.SpatialFast.asFloat
 
     val iconScale by animateNoirFloatAsState(
         targetValue = if (selected) 1.12f else 0.92f,
@@ -595,30 +597,18 @@ private fun UnifiedDockIconButton(
     )
     val iconTint by animateNoirColorAsState(
         targetValue = if (selected) PrimaryPink else Color.White.copy(alpha = 0.55f),
-        animationSpec = if (reducedMotion) NoirMotion.stiffSpringColor() else NoirMotion.noirEffectsColor(),
+        animationSpec = if (reducedMotion) NoirMotion.stiffSpringColor() else NoirMotion.Effects.Color,
         label = "uDockIconTint",
     )
-
-    val tactileAnim = remember { Animatable(1f) }
-    val scope = rememberCoroutineScope()
 
     Box(
         modifier = modifier
             .size(40.dp)
             .clip(CircleShape)
-            .clickable(
+            .noirClickable(
+                pressedScale = 0.90f,
                 enabled = enabled,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {
-                    scope.launch {
-                        withContext(NoirForceMotionScale) {
-                            tactileAnim.animateTo(0.88f, NoirMotion.noirSpatialFast())
-                            onClick()
-                            tactileAnim.animateTo(1f, NoirMotion.noirSpatialFast())
-                        }
-                    }
-                },
+                onClick = onClick,
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -630,8 +620,8 @@ private fun UnifiedDockIconButton(
                 .size(22.dp)
                 .graphicsLayer {
                     val dScale = dimScale()
-                    scaleX = iconScale * tactileAnim.value * dScale
-                    scaleY = iconScale * tactileAnim.value * dScale
+                    scaleX = iconScale * dScale
+                    scaleY = iconScale * dScale
                     alpha = dimAlpha()
                 },
         )

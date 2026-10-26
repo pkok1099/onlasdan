@@ -131,12 +131,12 @@ fun SettingsScreen(
         topBar = {
             val headerProgress by animateNoirFloatAsState(
                 targetValue = if (headerVisible.value) 1f else 0f,
-                animationSpec = rememberNoirSpec(NoirMotion.spatialSpring()),
+                animationSpec = rememberNoirSpec(NoirMotion.Spatial.asFloat),
                 label = "settingsHeaderProgress",
             )
             val headerAlpha by animateNoirFloatAsState(
                 targetValue = if (headerVisible.value) 1f else 0f,
-                animationSpec = rememberNoirSpec(NoirMotion.effectsSpring()),
+                animationSpec = rememberNoirSpec(NoirMotion.Effects.Float),
                 label = "settingsHeaderAlpha",
             )
             Box(

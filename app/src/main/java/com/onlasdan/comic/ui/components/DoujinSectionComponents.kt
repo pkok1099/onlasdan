@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.onlasdan.comic.R
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicThumbSfxStamp
+import com.onlasdan.comic.ui.components.pulltorefresh.comicShockwaveCard
 import com.onlasdan.comic.ui.source.AppDateFormatter
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.theme.*
@@ -45,28 +47,7 @@ fun CategoryBadge(
     type: String?,
     modifier: Modifier = Modifier,
 ) {
-    if (type.isNullOrBlank()) return
-    val cleanType = type.trim().uppercase()
-    // Kategori dibedakan lewat teks label, bukan warna (keputusan user 2026-10-21):
-    // semua tipe memakai satu treatment netral.
-    val bgColor = BadgeNeutral
-    val textColor = TextPrimary
-    Surface(
-        shape = RoundedCornerShape(4.dp),
-        color = bgColor,
-        modifier = modifier,
-    ) {
-        Text(
-            text = cleanType,
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 9.sp,
-                letterSpacing = 0.5.sp,
-            ),
-            color = textColor,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-        )
-    }
+    ComicCategoryBadge(type = type, modifier = modifier)
 }
 
 @Composable
@@ -74,26 +55,7 @@ fun StatusBadge(
     status: String?,
     modifier: Modifier = Modifier,
 ) {
-    if (status.isNullOrBlank()) return
-    val cleanStatus = status.trim()
-    val isCompleted = cleanStatus.equals("Completed", ignoreCase = true) || cleanStatus.equals("Tamat", ignoreCase = true)
-    val bgColor = if (isCompleted) StatusCompleted else StatusOngoing
-    Surface(
-        shape = RoundedCornerShape(4.dp),
-        color = bgColor,
-        modifier = modifier,
-    ) {
-        Text(
-            text = if (isCompleted) "Completed" else "Ongoing",
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 9.sp,
-                letterSpacing = 0.5.sp,
-            ),
-            color = TextPrimary,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-        )
-    }
+    ComicStatusBadge(status = status, modifier = modifier)
 }
 
 fun formatRelativeShort(lastUpdated: String?): String {
@@ -185,15 +147,10 @@ fun DoujinComicCard(
     val cardBounds = remember { CardBoundsHolder() }
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
-    val screenWidthPx = remember(windowInfo.containerSize) {
-        windowInfo.containerSize.width
-    }
+    val screenWidthPx = remember(windowInfo.containerSize) { windowInfo.containerSize.width }
     val context = LocalContext.current
     val imageRequest = remember(comic.cover, context) {
-        ImageRequest.Builder(context)
-            .data(comic.cover)
-            .crossfade(true)
-            .build()
+        ImageRequest.Builder(context).data(comic.cover).crossfade(true).build()
     }
     val fallbackSource = com.onlasdan.comic.ui.util.rememberSelectedSource()
     val effectiveSourceId = if (!comic.sourceId.isNullOrBlank()) comic.sourceId else fallbackSource
@@ -224,21 +181,20 @@ fun DoujinComicCard(
     var imgLoaded by remember { mutableStateOf(false) }
     val imgAlpha by animateNoirFloatAsState(
         targetValue = if (imgLoaded) 1f else 0f,
-        animationSpec = NoirMotion.noirEffects(),
+        animationSpec = NoirMotion.Effects.Float,
         label = "doujinCardImageAlpha",
     )
     val imgScale by animateNoirFloatAsState(
         targetValue = if (imgLoaded) 1f else 1.06f,
-        animationSpec = NoirMotion.noirSpatialMedium(),
+        animationSpec = NoirMotion.SpatialMedium.asFloat,
         label = "doujinCardImageScale",
     )
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                alpha = if (isBeingMorphed) 0f else 1f
-            }
+            .comicShockwaveCard(cardBounds)
+            .graphicsLayer { alpha = if (isBeingMorphed) 0f else 1f }
             .noirCombinedClickable(pressedScale = 0.93f, onLongClick = effectiveLongClick, onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
@@ -270,6 +226,7 @@ fun DoujinComicCard(
                         scaleY = imgScale
                     },
             )
+            ComicThumbSfxStamp(seed = comic.id, type = comic.type)
 
             // Category badge at top-left
             if (!comic.type.isNullOrBlank()) {
@@ -299,17 +256,14 @@ fun DoujinComicCard(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = PrimaryPink,
+                            tint = ComicSfxYellow,
                             modifier = Modifier.size(9.dp),
                         )
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = comic.rating,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 9.sp,
-                            ),
-                            color = AccentPink,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                            color = ComicSfxYellow,
                         )
                     }
                 }
@@ -385,15 +339,10 @@ fun DoujinComicListItem(
     val cardBounds = remember { CardBoundsHolder() }
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
-    val screenWidthPx = remember(windowInfo.containerSize) {
-        windowInfo.containerSize.width
-    }
+    val screenWidthPx = remember(windowInfo.containerSize) { windowInfo.containerSize.width }
     val context = LocalContext.current
     val imageRequest = remember(comic.cover, context) {
-        ImageRequest.Builder(context)
-            .data(comic.cover)
-            .crossfade(true)
-            .build()
+        ImageRequest.Builder(context).data(comic.cover).crossfade(true).build()
     }
     var imgLoaded by remember { mutableStateOf(false) }
     val fallbackSource = com.onlasdan.comic.ui.util.rememberSelectedSource()
@@ -429,9 +378,8 @@ fun DoujinComicListItem(
         border = BorderStroke(StrokeWidth.regular, DarkOutline),
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                alpha = if (isBeingMorphed) 0f else 1f
-            }
+            .comicShockwaveCard(cardBounds)
+            .graphicsLayer { alpha = if (isBeingMorphed) 0f else 1f }
             .noirCombinedClickable(pressedScale = 0.93f, onLongClick = effectiveLongClick, onClick = onClick),
     ) {
         Row(

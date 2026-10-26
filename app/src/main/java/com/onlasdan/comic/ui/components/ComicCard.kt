@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicThumbSfxStamp
+import com.onlasdan.comic.ui.components.pulltorefresh.comicShockwaveCard
 import com.onlasdan.comic.ui.source.Comic
 import com.onlasdan.comic.ui.source.Genre
 import com.onlasdan.comic.ui.theme.*
@@ -45,7 +47,7 @@ import com.onlasdan.comic.ui.util.noirCombinedClickable
 import com.onlasdan.comic.ui.util.staggeredEntrance
 
 private val ChapterBadgeGradient = Brush.verticalGradient(
-    colors = listOf(Color.Transparent, PureBlack.copy(alpha = 0.85f)),
+    colors = listOf(Color.Transparent, Color(0x99000000), Color(0xF5060609)),
 )
 
 /**
@@ -67,16 +69,10 @@ fun ComicCard(
     val cardBounds = remember { CardBoundsHolder() }
     val windowInfo = LocalWindowInfo.current
     val density = LocalDensity.current
-    val screenWidthPx = remember(windowInfo.containerSize) {
-        windowInfo.containerSize.width
-    }
-
+    val screenWidthPx = remember(windowInfo.containerSize) { windowInfo.containerSize.width }
     val context = LocalContext.current
     val imageRequest = remember(comic.cover, context) {
-        ImageRequest.Builder(context)
-            .data(comic.cover)
-            .crossfade(true)
-            .build()
+        ImageRequest.Builder(context).data(comic.cover).crossfade(true).build()
     }
 
     val fallbackSource = com.onlasdan.comic.ui.util.rememberSelectedSource()
@@ -105,12 +101,12 @@ fun ComicCard(
     var imgLoaded by remember { mutableStateOf(false) }
     val imgAlpha by animateNoirFloatAsState(
         targetValue = if (imgLoaded) 1f else 0f,
-        animationSpec = NoirMotion.noirEffects(),
+        animationSpec = NoirMotion.Effects.Float,
         label = "cardImageAlpha",
     )
     val imgScale by animateNoirFloatAsState(
         targetValue = if (imgLoaded) 1f else 1.06f,
-        animationSpec = NoirMotion.noirSpatialMedium(),
+        animationSpec = NoirMotion.SpatialMedium.asFloat,
         label = "cardImageScale",
     )
 
@@ -122,9 +118,8 @@ fun ComicCard(
     Column(
         modifier = modifier
             .width(width)
-            .graphicsLayer {
-                alpha = if (isBeingMorphed) 0f else 1f
-            }
+            .comicShockwaveCard(cardBounds)
+            .graphicsLayer { alpha = if (isBeingMorphed) 0f else 1f }
             .noirCombinedClickable(pressedScale = 0.93f, onLongClick = effectiveLongClick, onClick = onClick),
     ) {
         // Cover container with border and radius (Gestalt: Figure-Ground)
@@ -155,6 +150,7 @@ fun ComicCard(
                         scaleY = imgScale
                     },
             )
+            ComicThumbSfxStamp(seed = comic.id, type = comic.type)
 
             // Top Badges (Rating, Source)
             Row(
@@ -165,18 +161,7 @@ fun ComicCard(
                 verticalAlignment = Alignment.Top,
             ) {
                 if (showSourceTag && !comic.sourceName.isNullOrBlank()) {
-                    Surface(
-                        shape = ChipShape,
-                        color = DarkSurface.copy(alpha = 0.85f),
-                        border = BorderStroke(StrokeWidth.regular, DarkOutline),
-                    ) {
-                        Text(
-                            text = comic.sourceName,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary,
-                            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xxs),
-                        )
-                    }
+                    ComicCategoryBadge(type = comic.sourceName)
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
                 }
@@ -194,14 +179,14 @@ fun ComicCard(
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = AccentPink,
+                                tint = ComicSfxYellow,
                                 modifier = Modifier.size(10.dp),
                             )
                             Spacer(modifier = Modifier.width(Spacing.xxs))
                             Text(
                                 text = comic.rating,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = AccentPink,
+                                color = ComicSfxYellow,
                             )
                         }
                     }
@@ -249,22 +234,24 @@ fun ComicRow(
     cardWidth: Dp = 130.dp,
     showSourceTag: Boolean = false,
 ) {
+    val safeComics = remember(comics) { comics.distinctBy { "${it.sourceId}_${it.id}" } }
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = Spacing.lg),
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        items(
-            items = comics,
-            key = { "${it.sourceId}_${it.id}" },
-            contentType = { "comic_card" },
-        ) { comic ->
-            ComicCard(
-                comic = comic,
-                onClick = { onComicClick(comic) },
-                width = cardWidth,
-                showSourceTag = showSourceTag,
-            )
+        itemsIndexed(
+            items = safeComics,
+            key = { _, it -> "${it.sourceId}_${it.id}" },
+            contentType = { _, _ -> "comic_card" },
+        ) { index, comic ->
+            Box(
+                Modifier
+                    .animateItem(fadeInSpec = NoirMotion.Effects.Float, fadeOutSpec = NoirMotion.Effects.Float, placementSpec = NoirMotion.Spatial.asOffset)
+                    .staggeredEntrance(index = index, entranceDone = index >= 6, triggerKey = comic.id),
+            ) {
+                ComicCard(comic = comic, onClick = { onComicClick(comic) }, width = cardWidth, showSourceTag = showSourceTag)
+            }
         }
     }
 }
@@ -294,7 +281,7 @@ fun ComicGrid(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .staggeredEntrance(0, entranceDone),
+                            .staggeredEntrance(rowIndex * columns + colIndex, entranceDone, comic.id),
                     ) {
                         ComicCard(
                             comic = comic,
@@ -337,6 +324,7 @@ fun LazyListScope.comicGridItems(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .animateItem(fadeInSpec = NoirMotion.Effects.Float, fadeOutSpec = NoirMotion.Effects.Float, placementSpec = NoirMotion.Spatial.asOffset)
                 .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
@@ -344,7 +332,7 @@ fun LazyListScope.comicGridItems(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .staggeredEntrance(0, entranceDone),
+                        .staggeredEntrance(rowIndex * columns + colIndex, entranceDone, comic.id),
                 ) {
                     ComicCard(
                         comic = comic,
@@ -442,9 +430,8 @@ private fun RankedComicRowItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .graphicsLayer {
-                alpha = if (isBeingMorphed) 0f else 1f
-            }
+            .comicShockwaveCard(cardBounds)
+            .graphicsLayer { alpha = if (isBeingMorphed) 0f else 1f }
             .noirCombinedClickable(pressedScale = 0.93f, onLongClick = effectiveLongClick, onClick = onClick)
             .padding(vertical = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,

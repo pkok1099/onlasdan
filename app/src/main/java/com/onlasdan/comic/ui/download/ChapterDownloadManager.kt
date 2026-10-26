@@ -9,7 +9,6 @@ import com.onlasdan.comic.data.db.DownloadedPageEntity
 import com.onlasdan.comic.scraper.HttpClients
 import com.onlasdan.comic.ui.source.Chapter
 import com.onlasdan.comic.ui.source.Comic
-import com.onlasdan.comic.ui.source.SOURCE_REFERERS
 import com.onlasdan.comic.ui.source.SourceRegistry
 import com.onlasdan.comic.ui.util.UiPreferences
 import java.io.File
@@ -258,7 +257,31 @@ object ChapterDownloadManager {
             db.downloadDao().upsertChapter(initialEntity.copy(totalPages = images.size))
 
             val pageEntities = mutableListOf<DownloadedPageEntity>()
-            val totalBytes = downloadPages(db, task, dir, images, pageEntities)
+            val downloadTask = PageDownloadTask(
+                client = httpClient,
+                dir = dir,
+                images = images,
+                comicSlug = task.comicSlug,
+                source = task.source,
+                chapterSlug = task.chapterSlug,
+                chapterTitle = task.chapterTitle,
+                isCancelled = { task.isCancelled() },
+            )
+            val totalBytes = PageDownloader.downloadPages(
+                task = downloadTask,
+                pageEntities = pageEntities,
+                onProgress = { downloadedCount, bytesSoFar ->
+                    db.downloadDao().updateProgress(
+                        task.comicSlug,
+                        task.source,
+                        task.chapterSlug,
+                        downloadedCount,
+                        STATUS_DOWNLOADING,
+                        bytesSoFar,
+                    )
+                    DownloadJobService.notifyProgress(task.chapterTitle, downloadedCount, images.size)
+                },
+            )
             if (totalBytes == null) {
                 dir.deleteRecursively()
                 return
@@ -288,33 +311,6 @@ object ChapterDownloadManager {
         } catch (_: Exception) {
             failTask(db, task, dir)
         }
-    }
-
-    // Mengunduh semua halaman ke dir sambil melaporkan progres;
-    // mengembalikan total byte, atau null bila dibatalkan di tengah jalan.
-    private suspend fun downloadPages(db: ComicDatabase, task: DownloadTask, dir: File, images: List<String>, pageEntities: MutableList<DownloadedPageEntity>): Long? {
-        var totalBytes = 0L
-        val referer = SOURCE_REFERERS[task.source].orEmpty()
-        for ((index, imgUrl) in images.withIndex()) {
-            if (task.isCancelled()) return null
-            val targetFile = File(dir, "%03d.jpg".format(index + 1))
-            val reqBuilder = Request.Builder()
-                .url(imgUrl)
-                .header("User-Agent", "Mozilla/5.0 (Linux; Android 14) Chrome/123.0 Mobile Safari/537.36")
-            if (referer.isNotBlank()) reqBuilder.header("Referer", referer)
-            httpClient.newCall(reqBuilder.build()).execute().use { res ->
-                if (!res.isSuccessful) throw RuntimeException("HTTP ${res.code} downloading image")
-                val body = res.body ?: throw RuntimeException("Empty image body")
-                targetFile.outputStream().buffered().use { output -> body.byteStream().copyTo(output) }
-            }
-            totalBytes += targetFile.length()
-            pageEntities.add(
-                DownloadedPageEntity(task.comicSlug, task.source, task.chapterSlug, index, targetFile.absolutePath),
-            )
-            db.downloadDao().updateProgress(task.comicSlug, task.source, task.chapterSlug, index + 1, STATUS_DOWNLOADING, totalBytes)
-            DownloadJobService.notifyProgress(task.chapterTitle, index + 1, images.size)
-        }
-        return totalBytes
     }
 
     // Kegagalan unduhan tidak meninggalkan file parsial (bug B14): folder

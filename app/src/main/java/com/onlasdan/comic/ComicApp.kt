@@ -3,7 +3,10 @@ package com.onlasdan.comic
 import android.app.Application
 import android.content.pm.PackageInfo
 import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.onlasdan.comic.ui.download.ChapterDownloadManager
+import com.onlasdan.comic.ui.util.ImageIntegrityDecoderFactory
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
 import java.io.PrintWriter
@@ -14,7 +17,9 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 @HiltAndroidApp
-class ComicApp : Application() {
+class ComicApp :
+    Application(),
+    ImageLoaderFactory {
     companion object {
         lateinit var instance: ComicApp
             private set
@@ -26,6 +31,11 @@ class ComicApp : Application() {
         CrashLogger.install(this)
         ChapterDownloadManager.reconcileStuckDownloads(this)
     }
+
+    override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
+        .components { add(ImageIntegrityDecoderFactory()) }
+        .respectCacheHeaders(false)
+        .build()
 }
 
 object CrashLogger {

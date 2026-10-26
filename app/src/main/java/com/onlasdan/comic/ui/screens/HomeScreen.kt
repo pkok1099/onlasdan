@@ -1,6 +1,5 @@
 package com.onlasdan.comic.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -34,6 +33,11 @@ import com.onlasdan.comic.R
 import com.onlasdan.comic.ui.LocalBottomBarVisible
 import com.onlasdan.comic.ui.LocalOnOpenDownloads
 import com.onlasdan.comic.ui.components.*
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicPullToRefreshBox
+import com.onlasdan.comic.ui.components.pulltorefresh.ComicThumbSfxStamp
+import com.onlasdan.comic.ui.components.pulltorefresh.ElasticNoirAmbientBackdrop
+import com.onlasdan.comic.ui.components.pulltorefresh.comicShockwaveHero
+import com.onlasdan.comic.ui.screens.home.HomeScreenSkeleton
 import com.onlasdan.comic.ui.source.*
 import com.onlasdan.comic.ui.theme.*
 import com.onlasdan.comic.ui.util.bindAutoHideOnScroll
@@ -92,8 +96,9 @@ fun HomeScreen(
                 ttlMs = 5 * 60 * 1000L,
             ) { requestSource.home() }
             if (requestSource.id != currentSource.id) return
+            entranceDone = false
             sections = result
-            delay(300)
+            delay(650)
             entranceDone = true
         } catch (e: CancellationException) {
             throw e
@@ -123,53 +128,9 @@ fun HomeScreen(
             .fillMaxSize()
             .background(PureBlack),
     ) {
+        ElasticNoirAmbientBackdrop()
         if (isLoading && sections.isEmpty()) {
-            // Full-block skeleton shaped by THIS source's home layout (homeLayout
-            // data): hero slab, then one placeholder block per section in the
-            // source's real order and form — every source's layout differs.
-            val firstRowIndex = source.homeLayout.indexOf(SectionType.ROW)
-            ShimmerScope {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.lg),
-                ) {
-                    source.homeLayout.forEachIndexed { index, type ->
-                        item(key = "home_skel_${index}_$type") {
-                            when (type) {
-                                SectionType.HERO ->
-                                    if (source.capabilities.contains(Capability.MANGA_FEED_LAYOUT)) {
-                                        ShinigamiHeroPlaceholder()
-                                    } else {
-                                        ShimmerBox(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(280.dp)
-                                                .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
-                                            shape = CardShape,
-                                        )
-                                    }
-
-                                SectionType.ROW ->
-                                    if (source.capabilities.contains(Capability.MANGA_FEED_LAYOUT) && index == firstRowIndex) {
-                                        RecommendationsPlaceholder()
-                                    } else {
-                                        PlaceholderRow(cardWidth = 130.dp)
-                                    }
-
-                                SectionType.RANKED -> RankedPlaceholder()
-
-                                SectionType.GRID ->
-                                    when {
-                                        source.capabilities.contains(Capability.MANGA_FEED_LAYOUT) -> ShinigamiUpdatePlaceholder()
-                                        source.capabilities.contains(Capability.SECTION_BANNERS) -> BannerGridPlaceholder()
-                                        else -> PlaceholderGrid(rows = 2)
-                                    }
-                            }
-                        }
-                    }
-                }
-            }
+            HomeScreenSkeleton(source = source)
         } else if (errorMessage != null && sections.isEmpty()) {
             ErrorState(
                 message = errorMessage ?: "Gagal memuat feed beranda",
@@ -187,205 +148,216 @@ fun HomeScreen(
                 modifier = Modifier.align(Alignment.Center),
             )
         } else {
-            LazyColumn(
-                state = listState,
+            ComicPullToRefreshBox(
+                isRefreshing = isLoading && sections.isNotEmpty(),
+                onRefresh = {
+                    scope.launch {
+                        SourceCache.invalidate("${source.id}:home_sections")
+                        loadHome()
+                    }
+                },
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(Spacing.md),
             ) {
-                sections.forEach { section ->
-                    when (section.type) {
-                        SectionType.HERO -> {
-                            if (source.capabilities.contains(Capability.MANGA_FEED_LAYOUT)) {
-                                if (section.items.isNotEmpty()) {
-                                    item(key = "shinigami_hero_${section.id}") {
-                                        ShinigamiHeroCarousel(
-                                            comics = section.items,
-                                            onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
-                                        )
-                                    }
-                                }
-                            } else if (source.capabilities.contains(Capability.HERO_CAROUSEL)) {
-                                if (section.items.isNotEmpty()) {
-                                    item(key = "hero_carousel_${section.id}") {
-                                        HeroCarousel(
-                                            comics = section.items,
-                                            onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
-                                        )
-                                    }
-                                }
-                            } else {
-                                val heroComic = section.items.firstOrNull()
-                                if (heroComic != null) {
-                                    item(key = "hero_${heroComic.id}") {
-                                        HomeHeroBanner(
-                                            comic = heroComic,
-                                            onClick = { onComicClick(heroComic.id, heroComic.sourceId ?: source.id) },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        SectionType.ROW -> {
-                            if (section.items.isNotEmpty()) {
-                                if (source.capabilities.contains(Capability.MANGA_FEED_LAYOUT) && section.id == "recommendations") {
-                                    item(key = "shinigami_recs_${section.id}") {
-                                        ShinigamiRecommendationsSection(
-                                            comics = section.items,
-                                            onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
-                                            onLoadFormat = { fmt ->
-                                                source.sectionFeed("recommendations", fmt, 1).items
-                                            },
-                                        )
-                                    }
-                                } else {
-                                    item(key = "row_${section.id}") {
-                                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                                            SectionHeader(
-                                                title = section.title ?: "Series Populer",
-                                                actionText = if (section.hasMore) stringResource(R.string.home_action_see_all) else null,
-                                                onActionClick = { onBrowseClick(section.browseFilters) },
-                                            )
-                                            ComicRow(
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                ) {
+                    sections.forEach { section ->
+                        when (section.type) {
+                            SectionType.HERO -> {
+                                if (source.capabilities.contains(Capability.MANGA_FEED_LAYOUT)) {
+                                    if (section.items.isNotEmpty()) {
+                                        item(key = "shinigami_hero_${section.id}") {
+                                            ShinigamiHeroCarousel(
                                                 comics = section.items,
                                                 onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
-                                                cardWidth = 130.dp,
+                                            )
+                                        }
+                                    }
+                                } else if (source.capabilities.contains(Capability.HERO_CAROUSEL)) {
+                                    if (section.items.isNotEmpty()) {
+                                        item(key = "hero_carousel_${section.id}") {
+                                            HeroCarousel(
+                                                comics = section.items,
+                                                onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    val heroComic = section.items.firstOrNull()
+                                    if (heroComic != null) {
+                                        item(key = "hero_${heroComic.id}") {
+                                            HomeHeroBanner(
+                                                comic = heroComic,
+                                                onClick = { onComicClick(heroComic.id, heroComic.sourceId ?: source.id) },
                                             )
                                         }
                                     }
                                 }
                             }
-                        }
 
-                        SectionType.RANKED -> {
-                            if (section.items.isNotEmpty()) {
-                                item(key = "ranked_${section.id}") {
-                                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                                        SectionHeader(
-                                            title = section.title ?: "Peringkat",
-                                            actionText = if (section.hasMore) stringResource(R.string.home_action_see_all) else null,
-                                            onActionClick = { onBrowseClick(section.browseFilters) },
-                                        )
-                                        RankedComicList(
-                                            comics = section.items,
-                                            onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        SectionType.GRID -> {
-                            if (section.items.isNotEmpty()) {
-                                val useMangaFeed = source.capabilities.contains(Capability.MANGA_FEED_LAYOUT)
-                                val useDoujinBanner = source.capabilities.contains(Capability.SECTION_BANNERS)
-                                if (useMangaFeed) {
-                                    item(key = "shinigami_grid_${section.id}") {
-                                        ShinigamiUpdateSection(
-                                            comics = section.items,
-                                            onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
-                                            onSeeAllClick = { onBrowseClick(section.browseFilters) },
-                                            onLoadUpdates = { type, page ->
-                                                source.sectionFeed("latest", type, page)
-                                            },
-                                            entranceDone = entranceDone,
-                                        )
-                                    }
-                                } else {
-                                    item(key = "grid_${section.id}") {
-                                        val isGrid = sectionLayoutMap[section.id] ?: true
-                                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                                            if (useDoujinBanner) {
-                                                DoujinSectionBanner(
-                                                    title = section.title ?: "Update Terbaru",
-                                                    isGrid = isGrid,
-                                                    onToggleLayout = {
-                                                        sectionLayoutMap = sectionLayoutMap + (section.id to !isGrid)
-                                                    },
-                                                )
-                                                if (isGrid) {
-                                                    val rows = remember(section.items) { section.items.chunked(3) }
-                                                    Column(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(horizontal = Spacing.lg),
-                                                        verticalArrangement = Arrangement.spacedBy(Spacing.md),
-                                                    ) {
-                                                        rows.forEachIndexed { rIdx, rowItems ->
-                                                            Row(
-                                                                modifier = Modifier.fillMaxWidth(),
-                                                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                                                            ) {
-                                                                rowItems.forEachIndexed { cIdx, comic ->
-                                                                    Box(
-                                                                        modifier = Modifier
-                                                                            .weight(1f)
-                                                                            .staggeredEntrance(0, entranceDone),
-                                                                    ) {
-                                                                        DoujinComicCard(
-                                                                            comic = comic,
-                                                                            onClick = { onComicClick(comic.id, comic.sourceId ?: source.id) },
-                                                                        )
-                                                                    }
-                                                                }
-                                                                val remainder = 3 - rowItems.size
-                                                                if (remainder > 0) {
-                                                                    repeat(remainder) {
-                                                                        Spacer(modifier = Modifier.weight(1f))
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                } else {
-                                                    Column(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(horizontal = Spacing.lg),
-                                                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-                                                    ) {
-                                                        section.items.forEachIndexed { idx, comic ->
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .staggeredEntrance(0, entranceDone),
-                                                            ) {
-                                                                DoujinComicListItem(
-                                                                    comic = comic,
-                                                                    onClick = { onComicClick(comic.id, comic.sourceId ?: source.id) },
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                // Tombol "Lihat Semua" ala web doujin.desu.xxx
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(top = Spacing.sm),
-                                                    contentAlignment = Alignment.Center,
-                                                ) {
-                                                    TextButton(onClick = { onBrowseClick(section.browseFilters) }) {
-                                                        Text(
-                                                            text = stringResource(R.string.home_action_see_all),
-                                                            color = AccentPink,
-                                                            style = MaterialTheme.typography.labelLarge,
-                                                        )
-                                                    }
-                                                }
-                                            } else {
+                            SectionType.ROW -> {
+                                if (section.items.isNotEmpty()) {
+                                    if (source.capabilities.contains(Capability.MANGA_FEED_LAYOUT) && section.id == "recommendations") {
+                                        item(key = "shinigami_recs_${section.id}") {
+                                            ShinigamiRecommendationsSection(
+                                                comics = section.items,
+                                                onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
+                                                onLoadFormat = { fmt ->
+                                                    source.sectionFeed("recommendations", fmt, 1).items
+                                                },
+                                            )
+                                        }
+                                    } else {
+                                        item(key = "row_${section.id}") {
+                                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                                                 SectionHeader(
-                                                    title = section.title ?: "Update Terbaru",
+                                                    title = section.title ?: "Series Populer",
                                                     actionText = if (section.hasMore) stringResource(R.string.home_action_see_all) else null,
                                                     onActionClick = { onBrowseClick(section.browseFilters) },
                                                 )
-                                                ComicGrid(
+                                                ComicRow(
                                                     comics = section.items,
                                                     onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
-                                                    columns = 3,
-                                                    entranceDone = entranceDone,
+                                                    cardWidth = 130.dp,
                                                 )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            SectionType.RANKED -> {
+                                if (section.items.isNotEmpty()) {
+                                    item(key = "ranked_${section.id}") {
+                                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                            SectionHeader(
+                                                title = section.title ?: "Peringkat",
+                                                actionText = if (section.hasMore) stringResource(R.string.home_action_see_all) else null,
+                                                onActionClick = { onBrowseClick(section.browseFilters) },
+                                            )
+                                            RankedComicList(
+                                                comics = section.items,
+                                                onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            SectionType.GRID -> {
+                                if (section.items.isNotEmpty()) {
+                                    val useMangaFeed = source.capabilities.contains(Capability.MANGA_FEED_LAYOUT)
+                                    val useDoujinBanner = source.capabilities.contains(Capability.SECTION_BANNERS)
+                                    if (useMangaFeed) {
+                                        item(key = "shinigami_grid_${section.id}") {
+                                            ShinigamiUpdateSection(
+                                                comics = section.items,
+                                                onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
+                                                onSeeAllClick = { onBrowseClick(section.browseFilters) },
+                                                onLoadUpdates = { type, page ->
+                                                    source.sectionFeed("latest", type, page)
+                                                },
+                                                entranceDone = entranceDone,
+                                            )
+                                        }
+                                    } else {
+                                        item(key = "grid_${section.id}") {
+                                            val isGrid = sectionLayoutMap[section.id] ?: true
+                                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                                                if (useDoujinBanner) {
+                                                    DoujinSectionBanner(
+                                                        title = section.title ?: "Update Terbaru",
+                                                        isGrid = isGrid,
+                                                        onToggleLayout = {
+                                                            sectionLayoutMap = sectionLayoutMap + (section.id to !isGrid)
+                                                        },
+                                                    )
+                                                    if (isGrid) {
+                                                        val rows = remember(section.items) { section.items.chunked(3) }
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(horizontal = Spacing.lg),
+                                                            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                                                        ) {
+                                                            rows.forEachIndexed { rIdx, rowItems ->
+                                                                Row(
+                                                                    modifier = Modifier.fillMaxWidth(),
+                                                                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                                                ) {
+                                                                    rowItems.forEachIndexed { cIdx, comic ->
+                                                                        Box(
+                                                                            modifier = Modifier
+                                                                                .weight(1f)
+                                                                                .staggeredEntrance(rIdx * 3 + cIdx, entranceDone, comic.id),
+                                                                        ) {
+                                                                            DoujinComicCard(
+                                                                                comic = comic,
+                                                                                onClick = { onComicClick(comic.id, comic.sourceId ?: source.id) },
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                    val remainder = 3 - rowItems.size
+                                                                    if (remainder > 0) {
+                                                                        repeat(remainder) {
+                                                                            Spacer(modifier = Modifier.weight(1f))
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    } else {
+                                                        Column(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .padding(horizontal = Spacing.lg),
+                                                            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                                        ) {
+                                                            section.items.forEachIndexed { idx, comic ->
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .fillMaxWidth()
+                                                                        .staggeredEntrance(idx, entranceDone, comic.id),
+                                                                ) {
+                                                                    DoujinComicListItem(
+                                                                        comic = comic,
+                                                                        onClick = { onComicClick(comic.id, comic.sourceId ?: source.id) },
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    // Tombol "Lihat Semua" ala web doujin.desu.xxx
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(top = Spacing.sm),
+                                                        contentAlignment = Alignment.Center,
+                                                    ) {
+                                                        TextButton(onClick = { onBrowseClick(section.browseFilters) }) {
+                                                            Text(
+                                                                text = stringResource(R.string.home_action_see_all),
+                                                                color = AccentPink,
+                                                                style = MaterialTheme.typography.labelLarge,
+                                                            )
+                                                        }
+                                                    }
+                                                } else {
+                                                    SectionHeader(
+                                                        title = section.title ?: "Update Terbaru",
+                                                        actionText = if (section.hasMore) stringResource(R.string.home_action_see_all) else null,
+                                                        onActionClick = { onBrowseClick(section.browseFilters) },
+                                                    )
+                                                    ComicGrid(
+                                                        comics = section.items,
+                                                        onComicClick = { c -> onComicClick(c.id, c.sourceId ?: source.id) },
+                                                        columns = 3,
+                                                        entranceDone = entranceDone,
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -393,36 +365,36 @@ fun HomeScreen(
                             }
                         }
                     }
-                }
 
-                // Section "Jelajahi Genre" ala web — muncul hanya bila source
-                // mendeklarasikan featuredGenres (data-driven, tanpa cabang per source).
-                val featuredGenres = source.featuredGenres
-                if (featuredGenres.isNotEmpty()) {
-                    item(key = "genre_explorer") {
-                        val hasGenreBrowser = source.capabilities.contains(Capability.GENRE_BROWSER)
-                        Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                            SectionHeader(
-                                title = stringResource(R.string.home_genre_explorer),
-                                actionText = if (hasGenreBrowser) stringResource(R.string.home_action_see_all) else null,
-                                onActionClick = {
-                                    if (hasGenreBrowser) {
-                                        showGenreBrowserSheet = true
-                                    } else {
-                                        onBrowseClick(emptyMap())
-                                    }
-                                },
-                            )
-                            GenreExplorerGrid(
-                                genres = featuredGenres,
-                                onGenreClick = { g ->
-                                    if (hasGenreBrowser) {
-                                        onGenreBrowse(g.id, source.id)
-                                    } else {
-                                        onGenreClick(g, source.id)
-                                    }
-                                },
-                            )
+                    // Section "Jelajahi Genre" ala web — muncul hanya bila source
+                    // mendeklarasikan featuredGenres (data-driven, tanpa cabang per source).
+                    val featuredGenres = source.featuredGenres
+                    if (featuredGenres.isNotEmpty()) {
+                        item(key = "genre_explorer") {
+                            val hasGenreBrowser = source.capabilities.contains(Capability.GENRE_BROWSER)
+                            Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                                SectionHeader(
+                                    title = stringResource(R.string.home_genre_explorer),
+                                    actionText = if (hasGenreBrowser) stringResource(R.string.home_action_see_all) else null,
+                                    onActionClick = {
+                                        if (hasGenreBrowser) {
+                                            showGenreBrowserSheet = true
+                                        } else {
+                                            onBrowseClick(emptyMap())
+                                        }
+                                    },
+                                )
+                                GenreExplorerGrid(
+                                    genres = featuredGenres,
+                                    onGenreClick = { g ->
+                                        if (hasGenreBrowser) {
+                                            onGenreBrowse(g.id, source.id)
+                                        } else {
+                                            onGenreClick(g, source.id)
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -462,6 +434,7 @@ fun HomeHeroBanner(
             .fillMaxWidth()
             .height(290.dp)
             .padding(horizontal = Spacing.lg, vertical = Spacing.xs)
+            .comicShockwaveHero(CardCornerRadius)
             .clip(CardShape)
             .background(DarkSurfaceElevated)
             .pressScale(interactionSource)
@@ -480,6 +453,7 @@ fun HomeHeroBanner(
                 .fillMaxSize()
                 .background(HomeHeroGradient),
         )
+        ComicThumbSfxStamp(seed = comic.id, type = comic.type, isHero = true)
 
         // Bottom text and CTA
         Column(
@@ -493,7 +467,7 @@ fun HomeHeroBanner(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (!comic.type.isNullOrBlank()) {
-                    AppChip(text = comic.type)
+                    ComicCategoryBadge(type = comic.type)
                 }
                 if (!comic.rating.isNullOrBlank()) {
                     Surface(
@@ -508,14 +482,14 @@ fun HomeHeroBanner(
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = null,
-                                tint = PrimaryPink,
+                                tint = ComicSfxYellow,
                                 modifier = Modifier.size(10.dp),
                             )
                             Spacer(modifier = Modifier.width(Spacing.xxs))
                             Text(
                                 text = comic.rating,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = AccentPink,
+                                color = ComicSfxYellow,
                             )
                         }
                     }

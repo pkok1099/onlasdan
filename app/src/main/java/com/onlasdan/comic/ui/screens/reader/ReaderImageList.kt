@@ -20,6 +20,8 @@ import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import coil.size.Dimension
+import coil.size.Size
 import com.onlasdan.comic.ui.components.ReaderAutoRetryMaxAttempts
 import com.onlasdan.comic.ui.components.ReaderPageSlot
 import com.onlasdan.comic.ui.components.ReaderPageSlotState
@@ -27,6 +29,8 @@ import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.animateNoirFloatAsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+
+private const val ReaderPagePrefetchAhead = 8
 
 @Composable
 @Suppress("kotlin:S107", "kotlin:S3776")
@@ -52,18 +56,15 @@ fun ReaderImageList(
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
             .distinctUntilChanged()
             .collect { lastVisible ->
-                if (lastVisible < 0 || items.isEmpty() || lastVisible < items.size - 6) return@collect
-                val candidateItems = listOfNotNull(
-                    items.getOrNull(lastVisible + 1),
-                    items.getOrNull(lastVisible + 2),
-                )
-                candidateItems.filterIsInstance<ReaderContinuousItem.Page>().forEach { nextItem ->
+                val range = calculatePrefetchRange(lastVisible, items.size, ReaderPagePrefetchAhead) ?: return@collect
+                for (i in range) {
+                    val nextItem = items.getOrNull(i) as? ReaderContinuousItem.Page ?: continue
                     if (prefetched.putIfAbsent(nextItem.imageUrl, true) == null) {
                         imageLoader.enqueue(
                             ImageRequest.Builder(context)
                                 .apply { pageReferer?.let { addHeader("Referer", it) } }
                                 .data(nextItem.imageUrl)
-                                .size(displayWidthPx)
+                                .size(Size(Dimension.Pixels(displayWidthPx), Dimension.Undefined))
                                 .crossfade(true)
                                 .diskCachePolicy(CachePolicy.ENABLED)
                                 .memoryCachePolicy(CachePolicy.ENABLED)
@@ -107,14 +108,13 @@ fun ReaderImageList(
         ) { idx, item ->
             when (item) {
                 is ReaderContinuousItem.Page -> {
-                    var slotState by remember { mutableStateOf<ReaderPageSlotState>(ReaderPageSlotState.Loading) }
-                    var retryAttempt by remember { mutableIntStateOf(0) }
-                    var reloadKey by remember { mutableIntStateOf(0) }
+                    var slotState by remember(item.imageUrl) { mutableStateOf<ReaderPageSlotState>(ReaderPageSlotState.Loading) }
+                    var retryAttempt by remember(item.imageUrl) { mutableIntStateOf(0) }
+                    var reloadKey by remember(item.imageUrl) { mutableIntStateOf(0) }
                     val request = remember(item.imageUrl, reloadKey, pageReferer) {
                         ImageRequest.Builder(context)
                             .apply { pageReferer?.let { addHeader("Referer", it) } }
                             .data(item.imageUrl)
-                            .size(displayWidthPx)
                             .crossfade(true)
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .memoryCachePolicy(CachePolicy.ENABLED)
@@ -132,11 +132,11 @@ fun ReaderImageList(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center,
                     ) {
-                        var isLoaded by remember { mutableStateOf(false) }
-                        var settledReported by remember { mutableStateOf(false) }
+                        var isLoaded by remember(item.imageUrl) { mutableStateOf(false) }
+                        var settledReported by remember(item.imageUrl) { mutableStateOf(false) }
                         val imageAlpha by animateNoirFloatAsState(
                             targetValue = if (isLoaded) 1f else 0f,
-                            animationSpec = NoirMotion.effectsFastSpring(),
+                            animationSpec = NoirMotion.Effects.Fast,
                             label = "readerImageAlpha",
                         )
                         AsyncImage(

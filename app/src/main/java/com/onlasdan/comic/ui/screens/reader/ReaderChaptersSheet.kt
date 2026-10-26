@@ -1,7 +1,6 @@
 package com.onlasdan.comic.ui.screens.reader
 
 import android.content.Context
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -20,7 +19,9 @@ import androidx.compose.ui.unit.dp
 import com.onlasdan.comic.R
 import com.onlasdan.comic.data.db.ComicDatabase
 import com.onlasdan.comic.ui.theme.*
+import com.onlasdan.comic.ui.util.NoirMotion
 import com.onlasdan.comic.ui.util.extractSlug
+import com.onlasdan.comic.ui.util.noirClickable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -87,7 +88,12 @@ fun ReaderChaptersSheetContent(
                     color = if (isCurrent) DarkSurfaceElevated else Color.Transparent,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onNavigate(currentSlug) },
+                        .animateItem(
+                            fadeInSpec = NoirMotion.Effects.Float,
+                            fadeOutSpec = NoirMotion.Effects.Float,
+                            placementSpec = NoirMotion.Spatial.asOffset,
+                        )
+                        .noirClickable(pressedScale = 0.96f) { onNavigate(currentSlug) },
                 ) {
                     Row(
                         modifier = Modifier
