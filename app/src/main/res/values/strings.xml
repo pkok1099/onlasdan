@@ -146,6 +146,17 @@
     <string name="downloads_status_failed">Gagal diunduh</string>
     <string name="downloads_retry">Coba lagi unduh</string>
     <string name="downloads_open_chapters">Buka daftar chapter terunduh</string>
+    <!-- D6: badge gagal + retry massal -->
+    <string name="downloads_retry_all">Coba lagi semua</string>
+    <plurals name="downloads_badge_failed">
+        <item quantity="other">%1$d gagal</item>
+    </plurals>
+    <plurals name="downloads_failed_banner">
+        <item quantity="other">%1$d chapter gagal diunduh</item>
+    </plurals>
+    <plurals name="downloads_retry_all_done">
+        <item quantity="other">%1$d chapter dikembalikan ke antrean</item>
+    </plurals>
     <string name="downloads_delete_chapter">Hapus unduhan chapter</string>
     <string name="downloads_deleted_freed">%1$s berhasil dihapus</string>
     <string name="downloads_deleted">Unduhan dihapus</string>
@@ -389,6 +400,8 @@
     <string name="reader_tooltip_auto_next_locked">Auto Next: Terkunci Aktif (Mode Berkelanjutan)</string>
     <string name="reader_night_dimmer_title">Peredup Layar (Night Dimmer)</string>
     <string name="reader_night_dimmer_desc">Meredupkan gambar untuk membaca di ruangan gelap gulita (%1$d%%)</string>
+    <!-- B7: setelan reader tersimpan per komik -->
+    <string name="reader_per_comic_hint">Tersimpan per komik — komik lain memakai setelannya sendiri</string>
     <string name="reader_chapter_divider_title">Selesai: %1$s</string>
     <string name="reader_chapter_divider_next">Memulai: %1$s</string>
     <string name="reader_scroll_to_top">Ke Awal Bab</string>

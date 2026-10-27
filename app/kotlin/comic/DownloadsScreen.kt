@@ -2,6 +2,8 @@ package comic
 
 import android.text.format.Formatter
 import android.view.HapticFeedbackConstants
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -141,7 +146,12 @@ private fun DownloadsList(
         return
     }
     val totalSize = remember(downloads) { downloads.sumOf { it.sizeBytes } }
+    // D6: baris FAILED menunggu dicoba lagi — banner massal muncul bila ada.
+    val failedList = remember(downloads) { downloads.filter { it.status == ChapterDownloadManager.STATUS_FAILED } }
     LazyColumn(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (failedList.isNotEmpty()) {
+            item(key = "failed-banner") { FailedRetryBanner(failedList) }
+        }
         item(key = "mode") { DownloadModeToggle() }
         item(key = "summary") {
             Text(
@@ -202,11 +212,61 @@ private fun DownloadComicCard(chapters: List<DownloadedChapterEntity>, onOpen: (
             Text(sample.comicTitle, color = TextPrimary, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             DownloadGroupMeta(sample, chapters)
         }
-        Icon(
-            Icons.AutoMirrored.Filled.KeyboardArrowRight,
-            contentDescription = stringResource(R.string.downloads_open_chapters),
-            tint = TextSecondary,
+        DownloadTrailing(chapters.count { it.status == ChapterDownloadManager.STATUS_FAILED })
+    }
+}
+
+// D6: badge jumlah chapter gagal (pola badge backup D1) + chevron.
+@Composable
+private fun DownloadTrailing(failedCount: Int) {
+    if (failedCount > 0) {
+        Text(
+            text = pluralStringResource(R.plurals.downloads_badge_failed, failedCount, failedCount),
+            color = Color.White,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .background(AccentPink, CircleShape)
+                .padding(horizontal = 7.dp, vertical = 2.dp),
         )
+        Spacer(Modifier.width(8.dp))
+    }
+    Icon(
+        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = stringResource(R.string.downloads_open_chapters),
+        tint = TextSecondary,
+    )
+}
+
+// D6: banner retry massal — satu ketukan mengembalikan SEMUA chapter gagal
+// ke antrean; enqueue menimpa baris FAILED jadi QUEUED lalu menyalakan
+// drainer + job UIDT, sehingga daftar terlihat bergerak sendiri.
+@Composable
+private fun FailedRetryBanner(failed: List<DownloadedChapterEntity>, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(AccentPink.copy(alpha = 0.08f))
+            .border(0.5.dp, AccentPink.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+            .noirClickable {
+                ChapterDownloadManager.retryFailed(context) { count ->
+                    AppToast.success(context.resources.getQuantityString(R.plurals.downloads_retry_all_done, count, count))
+                }
+            }
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(Icons.Default.Refresh, contentDescription = null, tint = AccentPink, modifier = Modifier.size(18.dp))
+        Text(
+            pluralStringResource(R.plurals.downloads_failed_banner, failed.size, failed.size),
+            Modifier.weight(1f),
+            TextPrimary,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+        )
+        Text(stringResource(R.string.downloads_retry_all), color = AccentPink, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold))
     }
 }
 

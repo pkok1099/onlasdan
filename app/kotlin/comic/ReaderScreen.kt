@@ -73,14 +73,16 @@ fun ReaderScreen(
     var activeExpandedTab by remember { mutableStateOf<ReaderExpandedTab?>(null) }
     val sheetProgress = remember { Animatable(0f) }
     var autoScrollActive by rememberSaveable(slug) { mutableStateOf(prefs.getBoolean("reader_autoscroll_enabled", false)) }
-    var autoScrollSpeed by rememberSaveable(slug) { mutableFloatStateOf(prefs.getFloat("reader_autoscroll_speed", 100f)) }
+    // B7: kecepatan autoscroll & night dimmer tersimpan per komik — override
+    // spesifik judul menang, bila belum ada jatuh ke setelan global lama.
+    var autoScrollSpeed by rememberSaveable(slug) { mutableFloatStateOf(prefs.getFloat("reader_speed:$slug", prefs.getFloat("reader_autoscroll_speed", 100f))) }
     var autoNextEnabled by rememberSaveable { mutableStateOf(prefs.getBoolean("reader_autonext_enabled", true)) }
     var autoNextDelaySeconds by rememberSaveable { mutableFloatStateOf(prefs.getFloat("reader_autonext_delay_seconds", 2.5f)) }
     var autoScrollPausedUntil by rememberSaveable(slug, chapterSlug) { mutableLongStateOf(0L) }
     var immersiveFullscreen by rememberSaveable { mutableStateOf(prefs.getBoolean("reader_immersive_fullscreen", true)) }
     var keepScreenOnEnabled by rememberSaveable { mutableStateOf(prefs.getBoolean("reader_keep_screen_on", true)) }
     var seamlessChaptersEnabled by rememberSaveable { mutableStateOf(prefs.getBoolean("reader_seamless_chapters_enabled", true)) }
-    var nightDimmerAlpha by rememberSaveable { mutableFloatStateOf(prefs.getFloat("reader_night_dimmer", 0f)) }
+    var nightDimmerAlpha by rememberSaveable(slug) { mutableFloatStateOf(prefs.getFloat("reader_dimmer:$slug", prefs.getFloat("reader_night_dimmer", 0f))) }
 
     // B1: preferensi tombol volume dimuat sekali ke holder global yang
     // dibaca MainActivity.dispatchKeyEvent sebelum sistem memproses volume.
@@ -93,8 +95,10 @@ fun ReaderScreen(
         prefs.edit { putBoolean("reader_seamless_chapters_enabled", seamlessChaptersEnabled) }
     }
 
-    LaunchedEffect(nightDimmerAlpha) {
-        prefs.edit { putFloat("reader_night_dimmer", nightDimmerAlpha) }
+    // B7: perubahan dimmer dicatat ke key per-komik, bukan global — komik
+    // lain tetap memakai nilai default/overridenya sendiri.
+    LaunchedEffect(nightDimmerAlpha, slug) {
+        prefs.edit { putFloat("reader_dimmer:$slug", nightDimmerAlpha) }
     }
 
     LaunchedEffect(keepScreenOnEnabled) {
@@ -247,8 +251,9 @@ fun ReaderScreen(
         prefs.edit { putBoolean("reader_autoscroll_enabled", autoScrollActive) }
     }
 
-    LaunchedEffect(autoScrollSpeed) {
-        prefs.edit { putFloat("reader_autoscroll_speed", clampAutoScrollSpeed(autoScrollSpeed)) }
+    // B7: sama seperti dimmer — kecepatan tersimpan per komik.
+    LaunchedEffect(autoScrollSpeed, slug) {
+        prefs.edit { putFloat("reader_speed:$slug", clampAutoScrollSpeed(autoScrollSpeed)) }
     }
 
     LaunchedEffect(autoNextEnabled) {

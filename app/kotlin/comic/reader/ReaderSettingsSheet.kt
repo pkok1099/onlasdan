@@ -137,6 +137,12 @@ fun ReaderSettingsSheetContent(
                     modifier = Modifier.padding(top = Spacing.xs),
                 )
             }
+            // B7: nilai ini tersimpan per komik, bukan global.
+            Text(
+                text = stringResource(R.string.reader_per_comic_hint),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+            )
         }
 
         HorizontalDivider(color = DarkOutline.copy(alpha = 0.5f), thickness = StrokeWidth.hairline)
@@ -349,6 +355,12 @@ fun ReaderSettingsSheetContent(
                     inactiveTrackColor = DarkOutline,
                 ),
                 modifier = Modifier.padding(vertical = Spacing.xxs),
+            )
+            // B7: nilai ini tersimpan per komik, bukan global.
+            Text(
+                text = stringResource(R.string.reader_per_comic_hint),
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
             )
         }
 

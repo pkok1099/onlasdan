@@ -332,5 +332,25 @@ object ChapterDownloadManager {
         dir.deleteRecursively()
     }
 
+    // D6: retry massal — semua baris FAILED dikembalikan ke antrean lewat
+    // jalur enqueue biasa (timpa QUEUED + nyalakan drainer/job). onScheduled
+    // dipanggil dengan jumlah chapter yang dijadwalkan ulang (untuk toast UI);
+    // AppToast hanya men-set StateFlow, jadi aman dipanggil dari scope IO.
+    fun retryFailed(context: Context, onScheduled: (Int) -> Unit = {}) {
+        scope.launch {
+            val failed = ComicDatabase.get(context.applicationContext).downloadDao()
+                .observeAllDownloads().first().filter { it.status == STATUS_FAILED }
+            failed.forEach { entity ->
+                enqueue(
+                    context.applicationContext,
+                    Comic(id = entity.comicSlug, title = entity.comicTitle, cover = entity.coverUrl),
+                    Chapter(id = entity.chapterSlug, title = entity.chapterTitle),
+                    entity.source,
+                )
+            }
+            onScheduled(failed.size)
+        }
+    }
+
     fun getChapterDir(context: Context, source: String, comicSlug: String, chapterSlug: String): File = File(context.filesDir, "downloads/${source.lowercase()}/$comicSlug/$chapterSlug")
 }
