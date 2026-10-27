@@ -29,6 +29,7 @@ fun bindAutoHideOnScroll(
     bottomBarVisible: MutableState<Boolean>? = null,
     minDeltaPx: Int = 6,
 ) {
+    val dockBehavior = comic.chrome.LocalDockScrollBehavior.current
     LaunchedEffect(listState) {
         data class Pos(val index: Int, val offset: Int)
         var last: Pos? = null
@@ -39,12 +40,11 @@ fun bindAutoHideOnScroll(
             .collect { pos ->
                 val prev = last
                 if (prev != null) {
-                    // Pill: hanya tampil saat di posisi paling atas.
-                    // Geser sedikit saja ke bawah -> sembunyi, tidak menutupi konten.
                     val atTop = pos.index == 0 && pos.offset == 0
                     if (atTop) {
                         headerVisible?.value = true
                         bottomBarVisible?.value = true
+                        dockBehavior?.reset()
                         accumulated = 0
                         lastDirectionDown = null
                     } else {
@@ -53,10 +53,9 @@ fun bindAutoHideOnScroll(
                             pos.index < prev.index -> false
                             else -> pos.offset > prev.offset
                         }
-                        // Pill dock (bottomBar): sembunyi saat scroll ke bawah,
-                        // muncul lagi saat scroll ke atas (spec 2026-10-19 §3b).
-                        // Di posisi paling atas selalu tampil.
-                        bottomBarVisible?.value = !scrollingDown
+                        if (dockBehavior == null) {
+                            bottomBarVisible?.value = !scrollingDown
+                        }
                         val delta = if (pos.index != prev.index) minDeltaPx else abs(pos.offset - prev.offset)
                         if (delta > 0) {
                             if (lastDirectionDown == null || lastDirectionDown != scrollingDown) {

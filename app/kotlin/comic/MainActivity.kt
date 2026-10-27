@@ -59,9 +59,11 @@ import comic.chrome.ChromeRouteTag
 import comic.chrome.ComicSearchSheet
 import comic.chrome.ComicSearchSheetContent
 import comic.chrome.LocalChromeContext
+import comic.chrome.LocalDockScrollBehavior
 import comic.chrome.LocalFrostedGlass
 import comic.chrome.UnifiedMorphingDock
 import comic.chrome.frostedGlassSource
+import comic.chrome.rememberDockScrollBehavior
 import comic.chrome.rememberFrostedGlassState
 import comic.components.*
 import comic.components.ElasticNoirAmbientBackdrop
@@ -211,6 +213,7 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
 
         val navController = rememberNavController()
         val bottomBarVisible = rememberSaveable { mutableStateOf(true) }
+        val dockScrollBehavior = rememberDockScrollBehavior()
         val frostedGlass = rememberFrostedGlassState()
 
         BackHandler {
@@ -226,11 +229,13 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
             val route = currentDestination?.route
             if (route != null && (items.any { it.route == route } || route == "settings" || route.startsWith("genre") || route.startsWith("profile"))) {
                 bottomBarVisible.value = true
+                dockScrollBehavior.reset()
             }
         }
 
         CompositionLocalProvider(
             LocalBottomBarVisible provides bottomBarVisible,
+            LocalDockScrollBehavior provides dockScrollBehavior,
             LocalFrostedGlass provides frostedGlass,
             LocalCardHoldHandler provides { cardHoldTarget = it },
             LocalActiveCardHoldTarget provides cardHoldTarget,
@@ -357,7 +362,8 @@ internal fun AppRoot(mainViewModel: MainViewModel = hiltViewModel()) {
 
                                 Box(modifier = Modifier.weight(1f).fillMaxSize()) {
                                     val contentModifier = remember(isReaderDestination, currentDestination?.route) {
-                                        if (isReaderDestination || currentDestination?.route == "home") Modifier.fillMaxSize() else Modifier.fillMaxSize().statusBarsPadding()
+                                        val base = if (isReaderDestination || currentDestination?.route == "home") Modifier.fillMaxSize() else Modifier.fillMaxSize().statusBarsPadding()
+                                        if (isReaderDestination) base else base.androidx.compose.ui.input.nestedscroll.nestedScroll(dockScrollBehavior.nestedScrollConnection)
                                     }
 
                                     NavHost(

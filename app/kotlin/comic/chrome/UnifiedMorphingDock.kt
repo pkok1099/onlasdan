@@ -117,16 +117,7 @@ internal fun calculateDynamicMaxSheetHeight(
     return available.coerceAtLeast(200f).coerceAtMost(maxSheetHeightPx)
 }
 
-/**
- * Unified Morphing Dock ("Noir & Blush" — True Unified Pill-to-Sheet).
- *
- * Single Surface di [Alignment.BottomCenter]:
- * - Single source of truth: [sheetProgress] (0f = tertutup, 1f = terbuka penuh).
- * - Saat membuka/menutup, atap sheet naik/turun secara presisi, sementara baris ikon
- *   Pill Dock di dasar TERKUNCI MATI di posisinya (zero teleportation/jump).
- * - Real-time interactive drag 1:1 mengikuti jari via [detectVerticalDragGestures] + [VelocityTracker].
- * - Semua properti visual (width, cornerRadius, alpha, icon dimming) diinterpolasi dari [sheetProgress].
- */
+/** Unified Morphing Dock ("Noir & Blush" — True Unified Pill-to-Sheet). */
 @Composable
 fun UnifiedMorphingDock(
     visible: Boolean,
@@ -139,6 +130,7 @@ fun UnifiedMorphingDock(
     sheetProgress: Animatable<Float, AnimationVector1D> = remember { Animatable(0f) },
     maxSheetHeight: Dp = 480.dp,
     isModalOverlayActive: Boolean = false,
+    scrollBehavior: DockScrollBehavior? = LocalDockScrollBehavior.current,
     sheetContent: @Composable (tabIndex: Int) -> Unit,
 ) {
     val reducedMotion = rememberReducedMotion()
@@ -321,8 +313,10 @@ fun UnifiedMorphingDock(
             }
             .padding(bottom = 20.dp)
             .graphicsLayer {
-                alpha = if (isModalOverlayActive) 0f else pillAlpha.value
-                translationY = pillY.value
+                val scrollOffset = scrollBehavior?.offsetAnim?.value ?: 0f
+                val scrollFraction = scrollBehavior?.fraction ?: 0f
+                alpha = if (isModalOverlayActive) 0f else (pillAlpha.value * (1f - scrollFraction)).coerceIn(0f, 1f)
+                translationY = pillY.value + scrollOffset
                 scaleX = pillScale.value
                 scaleY = pillScale.value
             },
