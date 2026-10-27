@@ -25,12 +25,12 @@ A source advertises what features it supports via `Set<Capability>`:
 
 ## 2. Source Adapter Template
 
-Create a new file `app/src/main/java/com/onlasdan/comic/ui/source/MyNewSource.kt`:
+Create a new file `app/kotlin/comic/source/MyNewSource.kt`:
 
 ```kotlin
-package com.onlasdan.comic.ui.source
+package comic.source
 
-import com.onlasdan.comic.R
+import comic.R
 
 class MyNewSource : ComicSource {
     override val id: String = "mynewsource"
@@ -113,7 +113,7 @@ class MyNewSource : ComicSource {
 
 ## 3. Registration
 
-Open `app/src/main/java/com/onlasdan/comic/ui/source/SourceRegistry.kt` and add your source to the `_sources` list:
+Open `app/kotlin/comic/source/SourceRegistry.kt` and add your source to the `_sources` list:
 
 ```kotlin
 private val _sources = mutableListOf<ComicSource>(

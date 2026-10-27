@@ -7,54 +7,54 @@
 }
 
 # Preserve fields for API data models (JSON deserialization)
--keepclassmembers class com.onlasdan.comic.api.** {
+-keepclassmembers class comic.api.** {
     <fields>;
     <init>(...);
 }
 
 # Preserve UI source models and cache envelopes serialized to disk via Gson in SourceCache
--keep class com.onlasdan.comic.ui.source.Comic {
+-keep class comic.source.Comic {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.Chapter {
+-keep class comic.source.Chapter {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.Page {
+-keep class comic.source.Page {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.Genre {
+-keep class comic.source.Genre {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.Section {
+-keep class comic.source.Section {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.Filter {
+-keep class comic.source.Filter {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.FilterOption {
+-keep class comic.source.FilterOption {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.SortOption {
+-keep class comic.source.SortOption {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.Paged {
+-keep class comic.source.Paged {
     <fields>;
     <init>(...);
 }
--keep class com.onlasdan.comic.ui.source.SourceCache$DiskEnvelope {
+-keep class comic.source.SourceCache$DiskEnvelope {
     <fields>;
     <init>(...);
 }
--keepclassmembers enum com.onlasdan.comic.ui.source.SectionType { *; }
--keepclassmembers enum com.onlasdan.comic.ui.source.Capability { *; }
+-keepclassmembers enum comic.source.SectionType { *; }
+-keepclassmembers enum comic.source.Capability { *; }
 
 # Suppress harmless warnings from optional dependencies
 -dontwarn org.jsoup.**

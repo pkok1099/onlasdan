@@ -32,6 +32,7 @@ Pisahkan mutlak antara ruang dan efek visual:
   - `SpatialFast`: `dampingRatio = 0.72f`, `stiffness = 900f`. Elemen kecil, tactile recovery, pop icon.
   - `SpatialMedium`: `dampingRatio = 0.75f`, `stiffness = 550f`. Indikator pill dock, card entrance berbobot.
   - `SpatialHeavy`: `dampingRatio = 0.82f`, `stiffness = 380f`. Transisi layar, sheet morphing, keyboard IME dock offset.
+  - `SpatialSlow`: `dampingRatio = 0.72f`, `stiffness = 60f`. Entrance kartu sinematik (~1 detik) agar halftone burst + SFX stamp terbaca, bukan sia-sia.
 - **Effects Tokens** (alpha/opacity & warna; NoBouncy):
   - `Effects` (default): `dampingRatio = Spring.DampingRatioNoBouncy (1.0f)`, `stiffness = 1000f` (Float & Color) agar transisi warna dan transparansi mulus tanpa flickering.
   - `Effects.Fast`: `stiffness = 1200f` untuk perubahan efek yang lebih gesit.
@@ -40,6 +41,7 @@ Pisahkan mutlak antara ruang dan efek visual:
   - `Press`: `dampingRatio = 0.80f`, `stiffness = 1200f`. Basis fisik respons sentuhan cepat (`springPress()`).
 - **Ambient Tokens**:
   - `Ambient.Shimmer`: `dampingRatio = 0.80f`, `stiffness = 60f`.
+  - `Ambient.Wave`: `dampingRatio = 0.86f`, `stiffness = 14f` untuk wave skeleton — sweep pita cahaya ~2x lebih lambat agar gelombang di atas screentone tenang.
   - `Ambient.Breathe`: `dampingRatio = 0.80f`, `stiffness = 50f` untuk skeleton slot reader.
 - **Pill Tokens**:
   - `Pill.Throw` (muncul): dilempar dari bawah dengan momentum (`dampingRatio = 0.72f`, `stiffness = 500f`).

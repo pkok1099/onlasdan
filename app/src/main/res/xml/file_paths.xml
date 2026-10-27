@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- B9: halaman reader diekspor sementara ke cache/share untuk dibagikan -->
+    <cache-path
+        name="shared_pages"
+        path="share/" />
+</paths>

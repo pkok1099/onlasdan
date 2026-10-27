@@ -315,6 +315,15 @@
     <string name="storage_restore_skip">Lewati</string>
     <string name="storage_backup_last_time">Terakhir dicadangkan: %1$s</string>
     <string name="storage_backup_never">Belum pernah dicadangkan</string>
+    <!-- Badge & umur backup (D1/D2) + hero lanjutkan membaca (C2) -->
+    <string name="backup_age_now">baru saja</string>
+    <string name="backup_age_minutes">%1$d menit lalu</string>
+    <string name="backup_age_hours">%1$d jam lalu</string>
+    <string name="backup_age_days">%1$d hari lalu</string>
+    <string name="backup_age_weeks">%1$d pekan lalu</string>
+    <string name="resume_hero_label">Lanjutkan Membaca</string>
+    <string name="resume_hero_cd">Lanjutkan membaca</string>
+    <string name="resume_hero_dismiss_cd">Sembunyikan kartu lanjutkan</string>
     <string name="storage_btn_backup_now">Cadangkan Sekarang</string>
     <string name="storage_btn_change_folder">Ubah Folder</string>
     <string name="storage_backup_success">Data berhasil dicadangkan!</string>
@@ -397,4 +406,25 @@
     <string name="card_action_bookmark_sub">Simpan ke koleksi</string>
     <string name="card_action_last_read_prefix">Terakhir dibaca: %1$s</string>
     <string name="card_action_not_read_yet">Belum pernah dibaca</string>
+
+    <!-- v1.2.38 B1: paging tombol volume -->
+    <string name="reader_volume_paging_title">Paging Tombol Volume</string>
+    <string name="reader_volume_paging_desc">Tombol volume pindah halaman saat membaca (volume bawah = maju)</string>
+    <string name="reader_volume_invert_title">Balik Arah Volume</string>
+    <string name="reader_volume_invert_desc">Volume atas = halaman berikutnya</string>
+
+    <!-- v1.2.38 B9: aksi halaman reader (simpan/bagikan) -->
+    <string name="reader_page_actions_title">Halaman %1$d</string>
+    <string name="reader_page_save">Simpan ke Galeri</string>
+    <string name="reader_page_share">Bagikan Halaman</string>
+    <string name="reader_page_saved">Tersimpan di galeri</string>
+    <string name="reader_page_action_failed">Gagal memproses halaman</string>
+
+    <!-- v1.2.38 F3: komik acak -->
+    <string name="browse_random_cd">Komik acak</string>
+    <string name="browse_random_error">Gagal memilih komik acak. Coba lagi.</string>
+
+    <!-- v1.2.38 F4: riwayat pencarian -->
+    <string name="search_history_title">Riwayat:</string>
+    <string name="search_history_clear_cd">Hapus riwayat pencarian</string>
 </resources>

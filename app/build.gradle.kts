@@ -10,8 +10,10 @@ plugins {
 }
 
 android {
-    namespace = "com.onlasdan.comic"
-    compileSdk = 36
+    // Namespace dipangkas (v1.2.35): R/BuildConfig kini comic.R / comic.BuildConfig.
+    // applicationId TETAP com.onlasdan.comic — APK lama tetap bisa update-over-install.
+    namespace = "comic"
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.onlasdan.comic"
@@ -90,6 +92,20 @@ android {
         compose = true
         buildConfig = true
     }
+    // Source root dipangkas (v1.2.35): app/kotlin (main) & app/test (unit test)
+    // — efisiensi panjang path untuk navigasi AI agent. Fungsi build tidak berubah.
+    // Daftarkan di kotlin.srcDir (wajib utk built-in Kotlin AGP 9 — java.srcDir
+    // saja tidak terlihat oleh compileReleaseKotlin) + java.srcDir sebagai cadangan.
+    sourceSets {
+        getByName("main") {
+            java.srcDir("kotlin")
+            kotlin.srcDir("kotlin")
+        }
+        getByName("test") {
+            java.srcDir("test")
+            kotlin.srcDir("test")
+        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -149,6 +165,8 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.jsoup)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.haze)
+    implementation(libs.haze.blur)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -213,7 +231,7 @@ spotless {
 detekt {
     config.setFrom("$rootDir/config/detekt/detekt.yml")
     baseline = file("$rootDir/config/detekt/baseline.xml")
-    source.setFrom("src/main/java")
+    source.setFrom("kotlin")
     parallel = true
     autoCorrect = false
 }
@@ -239,7 +257,7 @@ val verifyFileLineLimits by tasks.registering {
         val failures = mutableListOf<String>()
         val softFiles = mutableListOf<String>()
         val seenExceptions = mutableSetOf<String>()
-        fileTree("src/main/java") { include("**/*.kt") }.forEach { f ->
+        fileTree("kotlin") { include("**/*.kt") }.forEach { f ->
             val lineCount = f.readLines().size
             val rel = f.toRelativeString(rootProject.projectDir)
             val cap = exceptions[rel]
@@ -250,8 +268,10 @@ val verifyFileLineLimits by tasks.registering {
                         failures += "$rel: $lineCount baris melewati cap pengecualian $cap — file warisan tidak boleh tumbuh."
                     }
                 }
+
                 lineCount > hardLimit ->
                     failures += "$rel: $lineCount baris melewati batas keras $hardLimit — pecah file ini, atau catat pengecualian beralasan kuat di config/quality/file-size-exceptions.txt."
+
                 lineCount > softLimit -> softFiles += "$rel: $lineCount baris"
             }
         }

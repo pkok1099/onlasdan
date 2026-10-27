@@ -21,7 +21,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ComicReader">
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.ComicReader"
             android:windowSoftInputMode="adjustResize">
@@ -38,12 +38,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-	                <data android:scheme="https" />
-	                <data android:host="comic-reader.pages.dev" /> <!-- Replace with actual production host if known -->
+                        <data android:scheme="https" />
+                        <data android:host="comic-reader.pages.dev" /> <!-- Replace with actual production host if known -->
 
-	                <!-- Komikindo patterns -->
-	                <data android:pathPrefix="/komikindo/comic/" />
-	                <data android:pathPrefix="/komikindo/read/" />
+                        <!-- Komikindo patterns -->
+                        <data android:pathPrefix="/komikindo/comic/" />
+                        <data android:pathPrefix="/komikindo/read/" />
 
                 <!-- Komiku patterns -->
                 <data android:pathPrefix="/komiku/comic/" />
@@ -51,8 +51,19 @@
             </intent-filter>
         </activity>
 
+        <!-- B9: berbagi halaman reader lewat cache share/ (grant URI sementara). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <service
-            android:name=".ui.download.DownloadJobService"
+            android:name=".download.DownloadJobService"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
